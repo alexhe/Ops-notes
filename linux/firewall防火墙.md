@@ -1,5 +1,7 @@
 # firewall防火墙配置
 
+> 启用服务的时候，可以通过 /usr/lib/firewalld/services/ 目录查看相应服务配置， 在 /etc/firewalld/services/ 这个目录中也有配置文件,这个要优先之前的那个
+
 ## 常用
 
 * 启动|关闭|重新启动|查看防火墙

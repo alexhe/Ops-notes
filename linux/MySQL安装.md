@@ -1,3 +1,5 @@
+[toc]
+
 # 通过yum软件库安装Mysql
 
 > 以下命令对于启用了dnf的系统，用dnf替换命令中的 yum
@@ -164,3 +166,31 @@ systemctl daemon-reload
     ```sql
     mysql>create user 'username'@'%' identified by 'password';
     ```
+
+# 从源代码编译安装
+
+## 配置编译环境
+
+* 安装cmake
+    ```shell
+    yum install gcc-c++  # 安装c++支持
+    wget https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.tar.gz  # 官网下载最新的cmake源文件压缩包
+    tar -zxf cmake-3.11.4-Linux-x86_64.tar.gz   # 解压源文件到当前目录
+    cd cmake-3.11.4-Linux-x86_64  # 进入cmake源文件目录
+    ./bootstrap --prefix=/opt/cmake/  # 编译安装到/opt/cmake目录下
+    make -j 16  # 16线程编译，可以加快速度
+    make install
+    ln -s /opt/cmake/bin/* /usr/local/bin/  # 软连接到系统环境变量目录
+    cmake --version  # 查看当前cmake版本
+    ```
+
+## 编译mysql
+
+* 下载mysql源包
+    ```shell
+    wget http://mirrors.163.com/mysql/Downloads/MySQL-8.0/mysql-8.0.12.tar.gz   # 从网易镜像站下载源文件
+    wget http://mirrors.163.com/mysql/Downloads/MySQL-8.0/mysql-8.0.12.tar.gz.md5   # 下载校验md5
+    md5sum -c mysql-8.0.12.tar.gz.md5   # 校验源文件
+    tar -zxf mysql-8.0.12.tar.gz # 解压
+    ```
+* 
