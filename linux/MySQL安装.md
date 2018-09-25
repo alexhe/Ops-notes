@@ -127,13 +127,158 @@ systemctl daemon-reload
     //重新启动mysql服务使配置生效：
     ```
 
-## 七、配置默认编码为utf8
+# 从源代码编译安装
 
-* 修改/etc/my.cnf配置文件，在[mysqld]下添加编码配置，如下所示：
+## 配置编译环境
+
+* yum安装需要的库文件
+    ```shell
+    yum install wget gcc gcc-c++ make perl ncurses ncurses-devel openssl openssl-devel libaio libaio-devel bison-devel bison
+    ```
+
+* 安装cmake
+    ```shell
+    yum install gcc-c++  # 安装c++支持
+    wget https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.tar.gz  # 官网下载最新的cmake源文件压缩包
+    tar -zxf cmake-3.11.4-Linux-x86_64.tar.gz   # 解压源文件到当前目录
+    cd cmake-3.11.4-Linux-x86_64  # 进入cmake源文件目录
+    ./bootstrap --prefix=/opt/cmake/  # 编译安装到/opt/cmake目录下
+    make -j 16  # 16线程编译，可以加快速度
+    make install
+    ln -s /opt/cmake/bin/* /usr/local/bin/  # 软连接到系统环境变量目录
+    cmake --version  # 查看当前cmake版本
+    ```
+
+* 安装boost(可选，因为我安装的源代码是包含boost头的，建议不安装和编译，节省时间)
+    ```shell
+    cd ~/src
+    wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz   # 下载
+    tar -zxf boost_1_68_0.tar.gz  # 解压缩
+    cd boost_1_68_0
+
+    # 配置编译选项
+    ./bootstrap.sh \
+    --exec-prefix=/opt/boost/ \   # 安装目录
+    --with-libraries=all \        # 需要编译的boost库，all表示所有
+    --with-toolset=gcc \          # 指定编译时使用哪种编译器
+    --with-icu \                  # 开启正则表达式支持icu
+    --with-python=python          # 指定Python可执行文件
+
+    # 编译安装
+    ./b2 install toolset=gcc variant=release threading=multi toolset=gcc --prefix=/opt/boost
+
+    # 添加环境变量
+    mkdir /opt/lib
+    echo "export C_INCLUDE_PATH=/opt/lib:$C_INCLUDE_PATH" > /etc/profile
+    echo "export CPLUS_INCLUDE_PATH=/opt/lib:$CPLUS_INCLUDE_PATH" > /etc/profile
+    echo "export LD_LIBRARY_PATH=/opt/lib:$LD_LIBRARY_PATH" > /etc/profile
+    echo "export LIBRARY_PATH=/opt/lib:$LIBRARY_PATH" > /etc/profile
+    source /etc/profile
+    ln -s /opt/boost/lib/* /opt/lib/
+    ldconfig -v
+    ```
+
+* 添加用户和创建安装、数据库文件目录
+    ```shell
+    groupadd dba
+    useradd -r -g dba -s /bin/false dba
+    mkdir /opt/mysql
+    mkdir -p /data/mysql
+    chown -R dba:dba /data/mysql
+    ```
+
+## 编译mysql
+
+* 下载mysql源包
+    ```shell
+    wget http://mirrors.163.com/mysql/Downloads/MySQL-8.0/mysql-boost-8.0.12.tar.gz   # 从网易镜像站下载源文件
+    wget http://mirrors.163.com/mysql/Downloads/MySQL-8.0/mysql-boost-8.0.12.tar.gz.md5   # 下载校验md5
+    md5sum -c mysql-boost-8.0.12.tar.gz.md5   # 校验源文件
+    rm -f mysql-boost-8.0.12.tar.gz.md5
+    tar -zxf mysql-boost-8.0.12.tar.gz  # 解压
+    ```
+
+* 编译安装和初始化mysql
+    ```shell
+    # 编译
+    mkdir bld
+    cd bld
+    cmake .. \
+    -DCMAKE_INSTALL_PREFIX=/opt/mysql \
+    -DENABLE_DOWNLOADS=1 \
+    -DMYSQL_DATADIR=/data/mysql \
+    -DSYSCONFDIR=/etc \
+    -DMYSQL_TCP_PORT=3306 \
+    -DWITH_INNOBASE_STORAGE_ENGINE=1 \
+    -DWITH_PARTITION_STORAGE_ENGINE=1 \
+    -DWITH_ARCHIVE_STORAGE_ENGINE=1 \
+    -DWITH_BLACKHOLE_STORAGE_ENGINE=1 \
+    -DSYSTEMD_PID_DIR=/run \
+    -DWITH_SYSTEMD=ON \
+    -DWITH_BOOST=/root/src/mysql-8.0.12/boost \
+    -DWITH_INNODB_MEMCACHED=ON \
+    -DWITH_GMOCK=/root/src/mysql-8.0.12/GoogleTest
+    make -j 4
+    make install
+
+    # 初始化
+    cd /opt/mysql
+    mkdir mysql-files
+    chown dba:dba mysql-files
+    chmod 750 mysql-files
+    bin/mysqld --initialize --user=dba --datadir=/data/mysql/ # 记录随机的密码
+    bin/mysql_ssl_rsa_setup  # 开启openssl，并生成key
+    cp usr/lib/systemd/system/mysqld.service /usr/lib/systemd/system/
+    vim /usr/lib/systemd/system/  # 把这两个更改下，User=dba Group=dba
+    systemctl daemon-reload
+    systemctl start mysql
+    mysql -uroot -p # 输入之前获得的随机码
+    ALTER USER 'root'@'localhost' IDENTIFIED WITH sha256_password BY 'MyNewPass4!'; # 修改root密码，并更改加密方式
+    ```
+
+# 二进制安装mysql
+
+和源码安装一样只是省去了编译的过程
+
+# 修改配置文件
+
+* 修改/etc/my.cnf配置文件，如下所示：
     ```ini
     [mysqld]
-    character_set_server=utf8
-    init_connect='SET NAMES utf8'
+     # 开启慢查询日志
+    slow_query_log = ON
+    slow_query_log_file = /var/log/mysql/slow.log
+    long_query_time = 10
+    log_queries_not_using_indexes = 1
+
+    # 开启操作日志
+    general_log=ON
+    general_log_file=/var/log/mysql/operation.log
+
+    # 错误日志
+    log_error=/var/log/mysql/error.log
+
+    # 更改默认编码
+    character_set_server=utf8mb4
+    init_connect='SET NAMES utf8mb4'
+
+    # 开启openssl，在初始化的时候执行bin/mysql_ssl_rsa_setup 命令，可以在数据目录里生成key
+    ssl_ca=ca.pem               # ca
+    ssl_capath=/data/mysql      # ca证书路径
+    ssl_cert=server-cert.pem    # 服务器公钥
+    ssl-key=server-key.pem      # 服务器私钥
+    # ssl_cipher=               # 加密方法
+    # ssl_crl=
+    # ssl_crlpath=
+    # ssl_fips_mode=OFF
+    # ssl_key=server-key.pem
+
+    [client]
+    # 本地启用ssl登录
+    ssl-ca=ca.pem
+    ssl_capath=/data/mysql
+    ssl-cert=client-cert.pem
+    ssl-key=client-key.pem
     ```
 * 重新启动mysql服务，查看数据库默认
     ```sql
@@ -152,45 +297,14 @@ systemctl daemon-reload
     alter database db_name CHARACTER SET utf8;
     //db_name改成数据库名称
     ```
-
-## 远程连接设置
-
 * 把在所有数据库的所有表的所有权限赋值给位于所有IP地址的root用户。
 
     ```sql
-    mysql> grant all privileges on *.* to root@'%'identified by 'password';
+    mysql> grant all privileges on *.* to root@'%'identified WITH sha256_password by 'password';
     ```
 
 * 如果是新用户而不是root，则要先新建用户
 
     ```sql
-    mysql>create user 'username'@'%' identified by 'password';
+    mysql>create user 'username'@'%' identified WITH sha256_password by 'password';
     ```
-
-# 从源代码编译安装
-
-## 配置编译环境
-
-* 安装cmake
-    ```shell
-    yum install gcc-c++  # 安装c++支持
-    wget https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.tar.gz  # 官网下载最新的cmake源文件压缩包
-    tar -zxf cmake-3.11.4-Linux-x86_64.tar.gz   # 解压源文件到当前目录
-    cd cmake-3.11.4-Linux-x86_64  # 进入cmake源文件目录
-    ./bootstrap --prefix=/opt/cmake/  # 编译安装到/opt/cmake目录下
-    make -j 16  # 16线程编译，可以加快速度
-    make install
-    ln -s /opt/cmake/bin/* /usr/local/bin/  # 软连接到系统环境变量目录
-    cmake --version  # 查看当前cmake版本
-    ```
-
-## 编译mysql
-
-* 下载mysql源包
-    ```shell
-    wget http://mirrors.163.com/mysql/Downloads/MySQL-8.0/mysql-8.0.12.tar.gz   # 从网易镜像站下载源文件
-    wget http://mirrors.163.com/mysql/Downloads/MySQL-8.0/mysql-8.0.12.tar.gz.md5   # 下载校验md5
-    md5sum -c mysql-8.0.12.tar.gz.md5   # 校验源文件
-    tar -zxf mysql-8.0.12.tar.gz # 解压
-    ```
-* 
