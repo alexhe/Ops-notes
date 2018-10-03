@@ -22,7 +22,7 @@ yum install curl-devel expat-devel openssl-devel zlib-devel asciidoc
 
 ```shell
 mkdir /opt/git
-make prefix=/opt/git/ install install-doc install-html install-info
+make prefix=/opt/git/ all
 ```
 
 ## 设置环境变量
