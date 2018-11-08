@@ -2,6 +2,23 @@
 
 > 采用yum源安装，方便，也可以二进制安装，编译的话不建议了，浪费时间，如果你要研究代码的话可以编译看下
 
+# linux服务器配置
+
+* 开启ip转发
+> centos6 参考这里：<https://blog.csdn.net/qianye_111/article/details/78987161>
+
+    ```shell
+    firewall-cmd --add-masquerade --permanent --zone=public # 更改防火墙允许所有ip转发
+    firewall-cmd --reload
+    cat > /etc/sysctl.d/99-kubernetes-cri.conf <<EOF
+    net.bridge.bridge-nf-call-iptables  = 1
+    net.ipv4.ip_forward                 = 1
+    net.bridge.bridge-nf-call-ip6tables = 1
+    EOF
+    sysctl -p /etc/sysctl.d/99-kubernetes-cri.conf
+    cat /proc/sys/net/ipv4/ip_forward  # 查看是否开启了ip转发，如果返回1表示开启了
+    ```
+
 # 通过yum安装docker-ce
 
 > 参考下这里:<https://yq.aliyun.com/articles/110806>
@@ -65,18 +82,28 @@ sudo service docker start
     route delete 157.0.0.0 # 删除
     ```
 
-# docker配置镜像加速
+# docker配置ip、log和存储驱动
 
 > docker加速网址可以去阿里云搞一个，地址是：<https://yq.aliyun.com/>
 
-    ```sh
-    mkdir -p /etc/docker
-    vim /etc/docker/daemon.json
-    # 添加一下内容
-    {
-        "registry-mirrors":["docker加速网址"]
-    }
-    ```
+```sh
+mkdir -p /etc/docker
+cat > /etc/docker/daemon.json <<EOF
+{
+  "registry-mirrors":["docker加速网址"],
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
+}
+EOF
+mkdir -p /etc/systemd/system/docker.service.d
+```
 
 # docker daemon.json配置文件格式
 

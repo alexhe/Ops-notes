@@ -16,7 +16,7 @@ socket文件：/var/run/mysqld/mysqld.pid</br>
 
 Yum存储库添加到系统的存储库列表中
 
-* 到MySQL存储库下载适用linux版本的发行包，[点我下载](http:# dev.mysql.com/downloads/repo/yum/.)</br>
+* 到MySQL存储库下载适用linux版本的发行包，[点我下载](http://dev.mysql.com/downloads/repo/yum/.)</br>
 * 使用以下命令安装下载的发行包</br>
 
     ```mysql
@@ -113,7 +113,7 @@ systemctl daemon-reload
     0 or LOW | Length
     1 or MEDIUM | Length; numeric, lowercase/uppercase, and special characters
     or STRONG | Length; numeric, lowercase/uppercase, and special characters; dictionary file
-    MySQL官网密码策略详细说明：[点击查看](http:# dev.mysql.com/doc/refman/5.7/en/validate-password-options-variables.html#sysvar_validate_password_policy)</br>
+    MySQL官网密码策略详细说明：[点击查看](http://dev.mysql.com/doc/refman/5.7/en/validate-password-options-variables.html#sysvar_validate_password_policy)</br>
     </br>
     修改密码策略
     ```vim
@@ -191,8 +191,8 @@ systemctl daemon-reload
 
 * 下载mysql源包
     ```sh
-    wget http:# mirrors.163.com/mysql/Downloads/MySQL-8.0/mysql-boost-8.0.12.tar.gz   # 从网易镜像站下载源文件
-    wget http:# mirrors.163.com/mysql/Downloads/MySQL-8.0/mysql-boost-8.0.12.tar.gz.md5   # 下载校验md5
+    wget http://mirrors.163.com/mysql/Downloads/MySQL-8.0/mysql-boost-8.0.12.tar.gz   # 从网易镜像站下载源文件
+    wget http://mirrors.163.com/mysql/Downloads/MySQL-8.0/mysql-boost-8.0.12.tar.gz.md5   # 下载校验md5
     md5sum -c mysql-boost-8.0.12.tar.gz.md5   # 校验源文件
     rm -f mysql-boost-8.0.12.tar.gz.md5
     tar -zxf mysql-boost-8.0.12.tar.gz  # 解压

@@ -23,6 +23,8 @@ yum install curl-devel expat-devel openssl-devel zlib-devel asciidoc
 ```shell
 mkdir /opt/git
 make prefix=/opt/git/ all
+sudo make prefix=/opt/git/ install
+echo $? # 查看是否编译安装完成
 ```
 
 ## 设置环境变量
