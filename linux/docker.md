@@ -90,6 +90,7 @@ sudo service docker start
 mkdir -p /etc/docker
 cat > /etc/docker/daemon.json <<EOF
 {
+  "bip":"docker的ip地址/24",
   "registry-mirrors":["docker加速网址"],
   "exec-opts": ["native.cgroupdriver=systemd"],
   "log-driver": "json-file",

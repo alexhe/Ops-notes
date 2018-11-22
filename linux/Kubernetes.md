@@ -63,4 +63,6 @@
     apt-mark hold kubelet kubeadm kubectl  # 对软件进行安装标记
     ```
 
-## 配置
+# 二进制安装（推荐）
+
+## 下载二进制文件

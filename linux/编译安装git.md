@@ -7,7 +7,7 @@
 ```shell
 mkdir ~/src
 cd ~/src
-wget https://github.com/git/git/archive/v2.19.0.tar.gz
+wget https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.19.1.tar.gz
 ```
 
 ## 安装依赖库文件
@@ -32,7 +32,7 @@ echo $? # 查看是否编译安装完成
 ```shell
 mkdir /opt/bin
 ln -s /opt/git/bin/* /opt/bin
-echo "export PATH=$PATH:/opt/bin/" > /etc/profile
+echo "export PATH=$PATH:/opt/bin/" >> /etc/profile
 source /etc/profile
 ```
 

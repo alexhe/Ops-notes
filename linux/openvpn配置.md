@@ -41,7 +41,7 @@
 
 * 安装openvpn到/opt/openvpn目录中
     ```sh
-    make && make install
+    make -j4 && make install
     ```
 
 ## 添加环境变量和服务
