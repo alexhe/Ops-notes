@@ -1,0 +1,38 @@
+shell主题
+adapta-eta
+应用程序主题
+adapta-eta
+numix-gtk-theme
+
+输入法
+ibus-rime
+
+扩展
+alternatetab（alt + tab  切换应用程序预览）
+applications menu(右上角开启应用程序预览）和unite冲突
+background logo (可有可无，桌面加水印的）
+dash to dock(dock 移动下边)
+unite( 标题栏移动到最上边）
+user themes(开启shell主题）
+Pomodoro(番茄计时器)
+# 一键安装
+sudo dnf install gnome-shell-extension-unite gnome-shell-extension-alternate-tab gnome-shell-extension-dash-to-dock gnome-shell-extension-apps-menu gnome-shell-extension-user-theme gnome-shell-extension-pomodoro
+
+#  软件
+vscode
+gnome-tweaks
+filezilla(没必要安装了）
+abrtd(selinuxlog）
+wps()
+以上通过dnf安装
+
+# opencl
+sudo dnf install mesa-libGL-devel mesa-libGLU-devel
+sudo dnf install freeglut-devel
+
+# 字体
+noto ans cjk sc medium
+
+#搜狗词库
+目录：/usr/share/ibus-libpinyin/db/
+脚本目录：~.config/ibus/libpinyin/user.lua
