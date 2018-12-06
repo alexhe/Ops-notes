@@ -1,8 +1,13 @@
-[top]
+# proxy学习笔记<!-- omit in toc -->
 
-# squid
+1. [安装squid](#安装squid)
+    1. [yum安装](#yum安装)
+    2. [编译安装](#编译安装)
+2. [服务端配置](#服务端配置)
+3. [使用https连接代理服务器](#使用https连接代理服务器)
+4. [pac设置](#pac设置)
 
-## 安装
+## 安装squid
 
 > 最简单的方法就是通过存储库 yum 安装
 > 也可以源码编译安装，或者二进制安装
@@ -216,6 +221,6 @@ make -j4 && make install
 > 防止GFW重定向连接
 > 使用certbot-auto 生成证书
 
-# pac设置
+## pac设置
 
 >

@@ -1,4 +1,7 @@
-# firewall防火墙配置
+# firewall学习笔记 <!-- omit in toc -->
+
+1. [常用](#常用)
+2. [自定义开启/关闭/查看端口](#自定义开启关闭查看端口)
 
 > 启用服务的时候，可以通过 /usr/lib/firewalld/services/ 目录查看相应服务配置， 在 /etc/firewalld/services/ 这个目录中也有配置文件,这个要优先之前的那个
 

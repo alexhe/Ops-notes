@@ -1,6 +1,20 @@
-[toc]
+# mysql学习笔记<!-- omit in toc -->
 
-# 通过yum软件库安装Mysql
+1. [通过yum软件库安装Mysql](#通过yum软件库安装mysql)
+    1. [一、安装MySQL RPM](#一安装mysql-rpm)
+    2. [二、选择一个mysql安装版本](#二选择一个mysql安装版本)
+    3. [三、安装mysql](#三安装mysql)
+    4. [四、启动MySQL服务器](#四启动mysql服务器)
+    5. [五、开机启动mysql](#五开机启动mysql)
+    6. [六、MySQL服务器初始化（仅适用于MySQL 5.7)](#六mysql服务器初始化仅适用于mysql-57)
+2. [从源代码编译安装](#从源代码编译安装)
+    1. [配置编译环境](#配置编译环境)
+    2. [编译mysql](#编译mysql)
+3. [二进制安装mysql](#二进制安装mysql)
+4. [修改配置文件](#修改配置文件)
+5. [mysql的命令](#mysql的命令)
+
+## 通过yum软件库安装Mysql
 
 > 以下命令对于启用了dnf的系统，用dnf替换命令中的 yum
 >
@@ -12,7 +26,7 @@
 服务启动脚本：/usr/lib/systemd/system/mysqld.service </br>
 socket文件：/var/run/mysqld/mysqld.pid</br>
 
-## 一、安装MySQL RPM
+### 一、安装MySQL RPM
 
 Yum存储库添加到系统的存储库列表中
 
@@ -23,7 +37,7 @@ Yum存储库添加到系统的存储库列表中
     rpm -Uvh 发行包名称
     ```
 
-## 二、选择一个mysql安装版本
+### 二、选择一个mysql安装版本
 
 > 当使用MySQL Yum存储库时，默认选择安装MySQL的最新GA版本进行安装。如果这是你想要的，你可以跳到下一步， 用Yum安装MySQL
 
@@ -49,14 +63,14 @@ yum repolist enabled | grep mysql
 
 > 为一个发行版系列启用子库。当启用多个版本系列的子库时，Yum将使用最新的系列
 
-## 三、安装mysql
+### 三、安装mysql
 
 ```sh
 yum install mysql-community-server
 # 安装MySQL，装MySQL服务器的软件包以及其他必需的软件包
 ```
 
-## 四、启动MySQL服务器
+### 四、启动MySQL服务器
 
 ```sh
 service mysqld start
@@ -67,14 +81,14 @@ service mysqld status
 # 查看MySQL服务的状态
 ```
 
-## 五、开机启动mysql
+### 五、开机启动mysql
 
 ```sh
 systemctl enable mysqld
 systemctl daemon-reload
 ```
 
-## 六、MySQL服务器初始化（仅适用于MySQL 5.7)
+### 六、MySQL服务器初始化（仅适用于MySQL 5.7)
 
 * mysql安装完成之后，在/var/log/mysqld.log文件中给root生成了一个默认密码（初始化）。通过下面的方式找到root默认密码，然后登录mysql进行修改
     ```sql
@@ -108,11 +122,11 @@ systemctl daemon-reload
 
     共有以下几种密码策略：
 
-    策略 | 检查规则
-    ---|---
-    0 or LOW | Length
-    1 or MEDIUM | Length; numeric, lowercase/uppercase, and special characters
-    or STRONG | Length; numeric, lowercase/uppercase, and special characters; dictionary file
+    | 策略        | 检查规则                                                                      |
+    | ----------- | ----------------------------------------------------------------------------- |
+    | 0 or LOW    | Length                                                                        |
+    | 1 or MEDIUM | Length; numeric, lowercase/uppercase, and special characters                  |
+    | or STRONG   | Length; numeric, lowercase/uppercase, and special characters; dictionary file |
     MySQL官网密码策略详细说明：[点击查看](http://dev.mysql.com/doc/refman/5.7/en/validate-password-options-variables.html#sysvar_validate_password_policy)</br>
     </br>
     修改密码策略
@@ -127,9 +141,9 @@ systemctl daemon-reload
     # 重新启动mysql服务使配置生效：
     ```
 
-# 从源代码编译安装
+## 从源代码编译安装
 
-## 配置编译环境
+### 配置编译环境
 
 * yum安装需要的库文件
     ```sh
@@ -187,7 +201,7 @@ systemctl daemon-reload
     chown -R dba:dba /data/mysql
     ```
 
-## 编译mysql
+### 编译mysql
 
 * 下载mysql源包
     ```sh
@@ -236,11 +250,11 @@ systemctl daemon-reload
     ALTER USER 'root'@'localhost' IDENTIFIED WITH sha256_password BY 'MyNewPass4!'; # 修改root密码，并更改加密方式
     ```
 
-# 二进制安装mysql
+## 二进制安装mysql
 
 和源码安装一样只是省去了编译的过程
 
-# 修改配置文件
+## 修改配置文件
 
 * 修改/etc/my.cnf配置文件，如下所示：
     ```ini
@@ -332,7 +346,7 @@ systemctl daemon-reload
     client-req.pem | 客户端的证书请求文件, 用于生成客户端的数字证书.
     client-cert.pem | 客户端的数字证书.
 
-# mysql的命令
+## mysql的命令
 
 * 重新启动mysql服务，查看数据库默认
     ```sql

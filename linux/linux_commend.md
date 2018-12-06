@@ -1,4 +1,12 @@
-# linux常用命令
+# linux常用命令<!-- omit in toc -->
+
+1. [rpm命令](#rpm命令)
+2. [vim命令](#vim命令)
+3. [yum命令](#yum命令)
+    1. [el7更改yum源与更新系统](#el7更改yum源与更新系统)
+4. [systemctl服务管理](#systemctl服务管理)
+5. [文件操作命令](#文件操作命令)
+6. [问题](#问题)
 
 ## rpm命令
 

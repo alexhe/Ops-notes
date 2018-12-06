@@ -1,10 +1,26 @@
-﻿[toc]
+﻿# openpn学习笔记<!-- omit in toc -->
+
+1. [编译安装openvpn](#编译安装openvpn)
+    1. [编译安装](#编译安装)
+    2. [添加环境变量和服务](#添加环境变量和服务)
+2. [生成服务端和客户端证书](#生成服务端和客户端证书)
+    1. [下载和配置easyrsa](#下载和配置easyrsa)
+    2. [根ca证书](#根ca证书)
+    3. [服务端证书](#服务端证书)
+    4. [客户端证书](#客户端证书)
+    5. [查看和撤销一个证书](#查看和撤销一个证书)
+3. [配置openvpn](#配置openvpn)
+    1. [服务端配置](#服务端配置)
+    2. [客户端配置](#客户端配置)
+4. [开启简单密码认证](#开启简单密码认证)
+    1. [创建认证脚本](#创建认证脚本)
+    2. [修改配置文件](#修改配置文件)
 
 >此文档为做实验的实验笔记，在阿里云买了个低配服务器，通过openvpn在家里电脑上安装mysql和freeradius，并通过freeradius控制openvpn账号
 
-# 编译安装openvpn
+## 编译安装openvpn
 
-## 编译安装
+### 编译安装
 
 * 安装编译依赖库
     ```sh
@@ -44,7 +60,7 @@
     make -j4 && make install
     ```
 
-## 添加环境变量和服务
+### 添加环境变量和服务
 
 * 配置环境变量
     ```sh
@@ -77,7 +93,7 @@
     cp sample/sample-config-files/server.conf /etc/openvpn/server/server.conf # 拷贝配置文件
     ```
 
-# 生成服务端和客户端证书
+## 生成服务端和客户端证书
 
 > 可以创建无数个client的key,每个客户端key的名字不可以一样，创建的文件介绍参照以下表格,迪菲·赫尔曼交换密钥根据KEY-SIZE定义的
 
@@ -93,7 +109,7 @@
 | client1.key    | 客户端秘钥          | 高，只有客户端需要       |
 | .........      | N多客户端证书和秘钥 | 中，只有客户端需要       |
 
-## 下载和配置easyrsa
+### 下载和配置easyrsa
 
 * 下载easyrsa
     ```sh
@@ -129,7 +145,7 @@
     ./easyrsa init-pki  # 初始化
     ```
 
-## 根ca证书
+### 根ca证书
 
 * 生成CA证书和秘钥，秘钥文件在./key/private/下
     ```bash
@@ -158,7 +174,7 @@
     /opt/openvpn/easy-rsa/key/ca.crt
     ```
 
-## 服务端证书
+### 服务端证书
 
 * 生成服务端证书和秘钥，证书和秘钥文件分别在./key/reqs/和./key/private/下
     ```bash
@@ -235,7 +251,7 @@
     DH parameters of size 2048 created at /opt/openvpn/easy-rsa/key/dh.pem
     ```
 
-## 客户端证书
+### 客户端证书
 
 * 生成客户端证书和秘钥，证书和秘钥文件分别在./key/reqs/和./key/private/下
     ```bash
@@ -299,7 +315,7 @@
     openvpn --genkey --secret /opt/openvpn/easy-rsa/key/ta.key
     ```
 
-## 查看和撤销一个证书
+### 查看和撤销一个证书
 
 * 查看证书的签约
     ```bash
@@ -311,7 +327,7 @@
     ./easyrsa revoke mykey # mykey代表自己的以.crt为后缀证书名字
     ```
 
-# 配置openvpn
+## 配置openvpn
 
 * 拷贝key文件到配置目录
     ```bash
@@ -333,7 +349,7 @@
     cp /opt/openvpn/easy-rsa/key/dh.pem /etc/openvpn/server/
     ```
 
-## 服务端配置
+### 服务端配置
 
 * 打开服务端配置文件，并按照需要修改，把 “；”去掉即可启用
     ```sh
@@ -489,7 +505,7 @@
     systemctl restart network
     ```
 
-## 客户端配置
+### 客户端配置
 
 * 打开客户端配置文件，并按照需要修改，把 “；”去掉即可启用
     ```sh
@@ -579,11 +595,11 @@
 
     ```
 
-# 开启简单密码认证
+## 开启简单密码认证
 
 > 首先按照前边的已经配置好了，用证书验证测试也可以通过了，可以更换成密码认证或者密码证书双认证
 
-## 创建认证脚本
+### 创建认证脚本
 
 * 创建文件,并修改权限，psw-file的权限修改最小
     ```sh
@@ -632,7 +648,7 @@
     exit 1
     ```
 
-## 修改配置文件
+### 修改配置文件
 
 * 服务端
     ```sh

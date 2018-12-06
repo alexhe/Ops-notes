@@ -1,4 +1,4 @@
-# docker学习笔记<!-- omit in toc -->
+# docker学习笔记 <!-- omit in toc -->
 
 1. [linux服务器配置](#linux服务器配置)
 2. [通过yum安装docker-ce](#通过yum安装docker-ce)

@@ -1,6 +1,13 @@
-[toc]
+# kubernetes学习笔记<!-- omit in toc -->
 
-# kubernetes所需端口
+1. [kubernetes所需端口](#kubernetes所需端口)
+2. [在线安装](#在线安装)
+    1. [配置yum源](#配置yum源)
+    2. [安装](#安装)
+3. [二进制安装（推荐）](#二进制安装推荐)
+    1. [下载二进制文件](#下载二进制文件)
+
+## kubernetes所需端口
 
 > 标有*的任何端口号都是可覆盖的，因此您需要确保您提供的任何自定义端口也是打开
 > 尽管主节点中包含etcd端口，但您也可以在外部或自定义端口上托管您自己的etcd集群
@@ -22,9 +29,9 @@
 |   TCP |   入站    |   10250       |   Kubelet API          |   本机，Control plan   |
 |   TCP |   入站    |  30000-32767  |   NodePort Services**  |          所有          |
 
-# 在线安装
+## 在线安装
 
-## 配置yum源
+### 配置yum源
 
 * centos的yum源
     ```shell
@@ -47,22 +54,22 @@
     EOF
     ```
 
-## 安装
+### 安装
 
 * centos
     ```shell
     setenforce 0
-    sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config # 设置selinux为透明模式
+    sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config ## 设置selinux为透明模式
     yum install -y kubelet kubeadm kubectl
-    systemctl enable kubelet && systemctl start kubelet # 启动kubelet
+    systemctl enable kubelet && systemctl start kubelet ## 启动kubelet
     ```
 * ubuntu
     ```shell
     apt-get update
     apt-get install -y kubelet kubeadm kubectl
-    apt-mark hold kubelet kubeadm kubectl  # 对软件进行安装标记
+    apt-mark hold kubelet kubeadm kubectl  ## 对软件进行安装标记
     ```
 
-# 二进制安装（推荐）
+## 二进制安装（推荐）
 
-## 下载二进制文件
+### 下载二进制文件

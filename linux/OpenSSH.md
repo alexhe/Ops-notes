@@ -1,6 +1,8 @@
-[toc]
+# openssh学习笔记<!-- omit in toc -->
 
-# CentOS 7 OpenSSH 配置
+1. [CentOS 7 OpenSSH 配置](#centos-7-openssh-配置)
+
+## CentOS 7 OpenSSH 配置
 
 默认自动安装SSH并开启密码登陆
 开启密钥登陆

@@ -1,4 +1,7 @@
-# 常用命令
+# FTP&SFTP常用命令<!-- omit in toc -->
+
+1. [SFTP](#sftp)
+2. [FTP命令](#ftp命令)
 
 ## SFTP
 
