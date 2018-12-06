@@ -1,8 +1,14 @@
-[toc]
+# docker学习笔记<!-- omit in toc -->
+
+1. [linux服务器配置](#linux服务器配置)
+2. [通过yum安装docker-ce](#通过yum安装docker-ce)
+3. [配置docker网络](#配置docker网络)
+4. [docker配置ip、log和存储驱动](#docker配置iplog和存储驱动)
+5. [docker daemon.json配置文件格式](#docker-daemonjson配置文件格式)
+
+## linux服务器配置
 
 > 采用yum源安装，方便，也可以二进制安装，编译的话不建议了，浪费时间，如果你要研究代码的话可以编译看下
-
-# linux服务器配置
 
 * 开启ip转发
 > centos6 参考这里：<https://blog.csdn.net/qianye_111/article/details/78987161>
@@ -19,7 +25,7 @@
     cat /proc/sys/net/ipv4/ip_forward  # 查看是否开启了ip转发，如果返回1表示开启了
     ```
 
-# 通过yum安装docker-ce
+## 通过yum安装docker-ce
 
 > 参考下这里:<https://yq.aliyun.com/articles/110806>
 
@@ -52,7 +58,7 @@ sudo service docker start
 # sudo yum -y install docker-ce-[VERSION]
 ```
 
-# 配置docker网络
+## 配置docker网络
 
 * 如果要docker内容器要固定ip地址，需要创建一个network
     ```sh
@@ -82,7 +88,7 @@ sudo service docker start
     route delete 157.0.0.0 # 删除
     ```
 
-# docker配置ip、log和存储驱动
+## docker配置ip、log和存储驱动
 
 > docker加速网址可以去阿里云搞一个，地址是：<https://yq.aliyun.com/>
 
@@ -106,7 +112,7 @@ EOF
 mkdir -p /etc/systemd/system/docker.service.d
 ```
 
-# docker daemon.json配置文件格式
+## docker daemon.json配置文件格式
 
 官方的完整配置样式，需要根据你的需要修改
 
