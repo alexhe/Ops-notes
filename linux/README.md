@@ -1,4 +1,4 @@
-# 学习笔记目录
+# linux笔记
 
 * [docker学习笔记](./docker.md)
 * [el7_network学习笔记](./el7_network.md)
