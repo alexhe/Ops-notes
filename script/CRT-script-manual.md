@@ -70,15 +70,15 @@ crt.Dialog.Method([arglist])
   * title:弹窗的标题描述，见运行结果中的标题处。
   * icon:警示图标，见结果中的图1到图4。icon的取值有：16(叉号，表示错误)，32(问号，表示确认)，48(叹号，表示警告)，64()
   * buttons:按钮类型，定义不同的类型，可以有不同的选项，同时鼠标点击不同的选项时也有不同的返回值。button取值范围为0到6,
-    button值 | 返回值
-    --- | ---
-    0 | 点击后返回值为1；
-    1 | 点击'确定'时，返回1，点击'取消'时返回2；
-    2 | 点击'终止'时，返回3，点击'重试'时返回4，点击'忽略'时返回5；
-    3 | 点击'是'时，返回6，点击'否'时，返回7，点击'取消'时返回2；
-    4 | 点击'是'时，返回6，点击'否'时，返回7；
-    5 | 点击'重试'时，返回4，点击'取消'时返回2；
-    6 | 点击'取消'时，返回2，点击'重试'时，返回10，点击'继续'，返回11；
+    | button值 | 返回值                                                          |
+    | -------- | --------------------------------------------------------------- |
+    | 0        | 点击后返回值为1；                                               |
+    | 1        | 点击'确定'时，返回1，点击'取消'时返回2；                        |
+    | 2        | 点击'终止'时，返回3，点击'重试'时返回4，点击'忽略'时返回5；     |
+    | 3        | 点击'是'时，返回6，点击'否'时，返回7，点击'取消'时返回2；       |
+    | 4        | 点击'是'时，返回6，点击'否'时，返回7；                          |
+    | 5        | 点击'重试'时，返回4，点击'取消'时返回2；                        |
+    | 6        | 点击'取消'时，返回2，点击'重试'时，返回10，点击'继续'，返回11； |
 
 #### Prompt
 
@@ -102,20 +102,20 @@ crt.Dialog.Method([arglist])
 
 ### Screen属性和方法
 
-属性 | 方法
---- | ---
-CurrentColumn | Clear
-CurrentRow | Get
-Columns | Get2
-Rows | IgnoreCase
-IgnoreEscape | Send
-MatchIndex | SendKeys
-Synchronous | SendSpecial
-.  | WaitForCursor
-.  | WaitForKey
-.  | WaitForString
-.  | WaitForStrings
-.  | ReadString
+| 属性          | 方法           |
+| ------------- | -------------- |
+| CurrentColumn | Clear          |
+| CurrentRow    | Get            |
+| Columns       | Get2           |
+| Rows          | IgnoreCase     |
+| IgnoreEscape  | Send           |
+| MatchIndex    | SendKeys       |
+| Synchronous   | SendSpecial    |
+| .             | WaitForCursor  |
+| .             | WaitForKey     |
+| .             | WaitForString  |
+| .             | WaitForStrings |
+| .             | ReadString     |
 
 ### Screen属性
 
@@ -240,47 +240,47 @@ Synchronous | SendSpecial
     > 这个功能需要语言本身支持，目前只有VBS和JS脚本可以使用，Python和Perl都不可以。
     >
     具体可以有哪些按键，参照下表,可以根据需要自由组合：
-    Key(按键) | Argument(参数)
-    --- | ---
-    SHIFT | +
-    CTRL | ^
-    ALT | %
-    BACKSPACE | {BACKSPACE}, {BS}, or {BKSP}
-    BREAK | {BREAK}
-    CAPS LOCK | {CAPSLOCK}
-    DEL or DELETE | {DELETE} or {DEL}
-    DOWN ARROW | {DOWN}
-    END | {END}
-    ENTER | {ENTER} or ~
-    ESC | {ESC}
-    HELP | {HELP}
-    HOME | {HOME}
-    INS or INSERT | {INSERT} or {INS}
-    LEFT ARROW | {LEFT}
-    NUM LOCK | {NUMLOCK}
-    PAGE DOWN | {PGDN}
-    PAGE UP | {PGUP}
-    PRINT SCREEN | {PRTSC}
-    RIGHT ARROW | {RIGHT}
-    SCROLL LOCK | {SCROLLLOCK}
-    TAB | {TAB}
-    UP ARROW | {UP}
-    F1, F2, ... F16 | {F1}, {F2}, ... {F16}
-    0, 1, ... 9 on number pad | {NUM_0}, {NUM_1}, ... {NUM_9}
-    . on number pad | {NUM_.}
-    / on number pad | {NUM_/}
-    * on number pad | {NUM_*}
-    - on number pad | {NUM_-}
-    + on number pad | {NUM_+}
-    ENTER on number pad | {NUM_ENTER}
-    HOME on number pad | {NUM_HOME}
-    PAGE UP on number pad | {NUM_PGUP}
-    END on number pad | {NUM_END}
-    PAGE DOWN on number pad | {NUM_PGDN}
-    UP ARROW on number pad | {NUM_UP}
-    DOWN ARROW on number pad | {NUM_DOWN}
-    LEFT ARROW on number pad | {NUM_LEFT}
-    RIGHT ARROW on number pad | {NUM_RIGHT}
+    | Key（按键）                | Argument(参数)                 |
+    | ------------------------- | ----------------------------- |
+    | SHIFT                     | +                             |
+    | CTRL                      | ^                             |
+    | ALT                       | %                             |
+    | BACKSPACE                 | {BACKSPACE}, {BS}, or {BKSP}  |
+    | BREAK                     | {BREAK}                       |
+    | CAPS LOCK                 | {CAPSLOCK}                    |
+    | DEL or DELETE             | {DELETE} or {DEL}             |
+    | DOWN ARROW                | {DOWN}                        |
+    | END                       | {END}                         |
+    | ENTER                     | {ENTER} or ~                  |
+    | ESC                       | {ESC}                         |
+    | HELP                      | {HELP}                        |
+    | HOME                      | {HOME}                        |
+    | INS or INSERT             | {INSERT} or {INS}             |
+    | LEFT ARROW                | {LEFT}                        |
+    | NUM LOCK                  | {NUMLOCK}                     |
+    | PAGE DOWN                 | {PGDN}                        |
+    | PAGE UP                   | {PGUP}                        |
+    | PRINT SCREEN              | {PRTSC}                       |
+    | RIGHT ARROW               | {RIGHT}                       |
+    | SCROLL LOCK               | {SCROLLLOCK}                  |
+    | TAB                       | {TAB}                         |
+    | UP ARROW                  | {UP}                          |
+    | F1, F2, ... F16           | {F1}, {F2}, ... {F16}         |
+    | 0, 1, ... 9 on number pad | {NUM_0}, {NUM_1}, ... {NUM_9} |
+    | . on number pad           | {NUM_.}                       |
+    | / on number pad           | {NUM_/}                       |
+    | * on number pad           | {NUM_*}                       |
+    | - on number pad           | {NUM_-}                       |
+    | + on number pad           | {NUM_+}                       |
+    | ENTER on number pad       | {NUM_ENTER}                   |
+    | HOME on number pad        | {NUM_HOME}                    |
+    | PAGE UP on number pad     | {NUM_PGUP}                    |
+    | END on number pad         | {NUM_END}                     |
+    | PAGE DOWN on number pad   | {NUM_PGDN}                    |
+    | UP ARROW on number pad    | {NUM_UP}                      |
+    | DOWN ARROW on number pad  | {NUM_DOWN}                    |
+    | LEFT ARROW on number pad  | {NUM_LEFT}                    |
+    | RIGHT ARROW on number pad | {NUM_RIGHT}                   |
 
 #### SendSpecial()
 
