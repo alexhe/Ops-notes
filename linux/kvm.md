@@ -3,13 +3,23 @@
 1. [查看是否支持kvm虚拟化](#查看是否支持kvm虚拟化)
 2. [编译安装qemu和libvirt（未完成）](#编译安装qemu和libvirt未完成)
 3. [YUM安装](#yum安装)
-4. [管理工具](#管理工具)
-5. [优化和介绍KVM](#优化和介绍kvm)
-    1. [CPU优化](#cpu优化)
-    2. [内存优化](#内存优化)
-    3. [I/O等设备使用半虚拟化设备](#io等设备使用半虚拟化设备)
-    4. [磁盘&存储](#磁盘存储)
-    5. [KVM网络](#kvm网络)
+4. [libvirt配置文件](#libvirt配置文件)
+   1. [主机xml配置文件](#主机xml配置文件)
+5. [管理工具](#管理工具)
+   1. [qemu-img](#qemu-img)
+   2. [virsh](#virsh)
+   3. [virt-manager](#virt-manager)
+   4. [virt-install](#virt-install)
+   5. [virt-viewer](#virt-viewer)
+   6. [guestfish](#guestfish)
+   7. [GNOME Boxes](#gnome-boxes)
+   8. [其他工具](#其他工具)
+6. [优化和介绍KVM](#优化和介绍kvm)
+   1. [CPU优化](#cpu优化)
+   2. [内存优化](#内存优化)
+   3. [I/O等设备使用半虚拟化设备](#io等设备使用半虚拟化设备)
+   4. [磁盘&存储](#磁盘存储)
+   5. [KVM网络](#kvm网络)
 
 ## 查看是否支持kvm虚拟化
 
@@ -69,288 +79,424 @@
     yum install qemu-kvm libvirt -y
     ```
 
+## libvirt配置文件
+
+> libvirt的默认配置文件在：`/etc/libvirt`
+> libvirt的默认工作区在：`/var/cache/libvirt`
+
+### 主机xml配置文件
+
+> 验证xml文件`virt-xml-validate /path/to/XML/file`
+> [官方文档](https://libvirt.org/drvqemu.html#xmlconfig)
+
+1. 通用根配置文件
+
+    ```xml
+    <domain type='kvm' id='1'>
+        <name>MyGuest</name>
+        <uuid>4dea22b3-1d52-d8f3-2516-782e98ab3fa0</uuid>
+        <genid>43dc0cf8-809b-4adb-9bea-a9abb5f3d90e</genid>
+        <title>A short description - title - of the domain</title>
+        <description>Some human readable description</description>
+        <metadata>
+            <app1:foo xmlns:app1="http://app1.org/app1/">..</app1:foo>
+            <app2:bar xmlns:app2="http://app1.org/app2/">..</app2:bar>
+        </metadata>
+        ......
+    <domain>
+    ```
+    * 根元素`domain`有两个属性，`type`代表虚拟机的管理程序，有`kvm`，`xen`,`qemu`,`lxc`和`kqemu`；`id`代表正在运行的虚拟机唯一整数标识符，非活动的虚拟机没有id
+    * `name`
+        虚拟机的名称，同一个物理机器唯一
+    * `uuid`
+        全局唯一标识符，格式必须符合RFC 4122，如果在定义/创建新guest时省略，则会生成随机UUID。也可以通过[sysinfo](https://libvirt.org/formatdomain.html#elementsSysinfo)规范提供uuid
+    * `genid`
+        和`uuid`元素一样。
+    * `title`
+        可选元素title为虚拟机的简短描述，不应包含任何换行符。
+    * `description`
+        description元素为虚拟机的详细描述，libvirt不以任何方式使用此数据，它可以包含用户想要的任何信息
+    * `metadata`（没理解）
+        The metadata node can be used by applications to store custom metadata in the form of XML nodes/trees. Applications must use custom namespaces on their XML nodes/trees, with only one top-level element per namespace (if the application needs structure, they should have sub-elements to their namespace element)
+
+2. 虚拟机系统启动相关
+
+    > 有许多不同的方法可以启动虚拟机，每种方法各有利弊。
+
+    1. bios启动
+        > 通过BIOS引导可用于支持完全虚拟化的虚拟机管理程序。在这种情况下，BIOS具有引导顺序优先级（软盘，硬盘，cdrom，网络），用于确定获取/查找引导映像的位置。
+        ```xml
+        ...........
+        <os>
+            <type arch='x86_64' machine='pc-q35-rhel7.5.0'>hvm</type>
+            <loader readonly='no' secure='no' type='rom'>/usr/share/OVMF/OVMF_CODE.fd</loader>
+            <nvram>/home/cc/.config/libvirt/qemu/nvram/windows_VARS.fd</nvram>
+            <boot dev='hd'/>
+            <boot dev='cdrom'/>
+            <bootmenu enable='yes' timeout='3000'/>
+            <smbios mode='sysinfo'/>
+            <bios useserial='yes' rebootTimeout='0'/>
+        </os>
+        ...........
+        ```
+
+        * `type`
+            `type`元素的内容指定要在虚拟机中引导的操作系统的类型, `hvm`为借助qemu-kvm完全虚拟化，`arch`属性指定虚拟化的CPU架构，`machine`属性指定虚拟化的机器类型；可以通过 [`virsh capabilities`](https://libvirt.org/formatcaps.html) 查看`type`元素支持的内容
+        * `loader`
+            `loader`可选元素的内容是指定虚拟机守护进程的绝对路径，用户辅助虚拟机的创建。有两个可选属性，`readonly`: 值有yes|no，标记镜像是可写或者只读；`type`: 值有rom|pflash，以什么方式引导镜像，pflash可以加载UEFI镜像，`secure`控制是否开启安全启动
+        * `nvram`
+            `nvram`可选元素的表示虚拟uefi固件的文件位置，在`qemu.conf`文件中定义了，`template`属性会覆盖掉`qemu.conf`中的关于nvram的相应配置
+        * `boot`
+            `boot`元素的值：`fd`,`hd`,`cdrom`或`network`中的一个，用于指定引导设备，可以重复多次来设置设备引导的优先级列表，在磁盘等设备的部分也可以控制引导顺序，并且优先级比这里的高，也是官方推荐的。
+        * `bootmenu`
+            `bootmenu`元素定义是否在guest启动时启用交互式启动菜单，如果未指定，将使用管理程序的默认值
+        * `smbios`
+            `smbios`元素定义如何填充guest虚拟机中可见的SMBIOS信息，必选属性`mode`的值:`emulate`(让虚拟机管理程序生成所有值)，`host`(从主机的SMBIOS值复制块0和块1中的所有块，除了UUID)或者`sysinfo`(使用[sysinfo](https://libvirt.org/formatdomain.html#elementsSysinfo)元素中的值)
+        * `bios`
+            `bios`元素定义bios启动的设置，uefi启动无效。`useserial`属性：启用或禁用串行图形适配器，允许用户在串行端口上查看BIOS消息，需要定义[串口](https://libvirt.org/formatdomain.html#elementCharSerial); `rebootTimeout`属性：引导失败后多久重新启动，毫秒为单位，最大65535，`-1`禁止启动
+
+    2. 主机启动加载器
+        使用其他的启动加载器来启动IOS文件，安装系统或者直接启动系统，例如 `pygrubXen`：
+
+        ```xml
+        <bootloader>/usr/bin/pygrub</bootloader>
+        <bootloader_args>--append single</bootloader_args>
+        ```
+
+        * bootloader:
+            bootloader元素的内容提供了主机OS​​中引导加载程序可执行文件的完全路径。将运行此引导加载程序以选择要引导的内核
+        * bootloader_args:
+            可选bootloader_args元素参数传递给引导加载程序
+
+    3. 直接内核启动
+        安装新的客户操作系统时，直接从存储在主机操作系统中的内核和initrd启动通常很有用，允许将命令行参数直接传递给安装程序。此功能通常适用于para和full虚拟客户端
+        参考官网:<https://libvirt.org/formatdomain.html#elementsOSKernel>
+
+    4. linux容器启动
+        使用基于容器的虚拟化而不是内核/启动映像启动域
+        参考官网:<https://libvirt.org/formatdomain.html#elementsOSContainer>
+
+    5. SMBIOS系统信息
+        一些管理程序允许控制向客户呈现的系统信息（例如，SMBIOS字段可以由管理程序填充并通过客户机中的dmidecode命令进行检查）。可选sysinfo元素涵盖所有此类信息。
+        参照官网:<https://libvirt.org/formatdomain.html#elementsSysinfo>
+
+3. CPU分配
+
+    ```xml
+    <domain>
+    ......
+        <vcpu placement='static' cpuset="1-4,^3,6" current="1">2</vcpu>
+        <vcpus>
+            <vcpu id='0' enabled='yes' hotpluggable='no' order='1'/>
+            <vcpu id='1' enabled='no' hotpluggable='yes'/>
+        </vcpus>
+    ......
+    </domain>
+    ```
+
+    * vcpu
+        此元素的内容定义为guest虚拟机操作系统分配的最大虚拟CPU数，必须介于1和虚拟机管理程序支持的最大值之间。最好不要超过实际CPU数量
+      * cpuset
+        可选属性cpuset是以逗号分隔的物理CPU编号列表，默认情况下可以固定域进程和虚拟CPU。该列表中的每个元素可以是单个CPU编号，一系列CPU编号，`^`后跟要从先前范围中排除的CPU编号。
+      * current
+        是否应启用最少CPU数量
+      * placement
+        placement(分配模式):static|auto，如果通过`cpuset`来指定CPU个数，必须为`static`。如果`placement`为`static`，`cpuset`并没有指定，将固定所有可用物理CPU
+    * vcpus
+        控制各个vCPU的状态
+        * `ID`属性指定libvirt使用的vcpu id,注意：某些情况下，guest中现实的`vcpu id`可能和`libvirt`不一样，有效范围从`0`到由`vcpu`定义的最大CPU减一
+        * `enable`属性表示允许控制`vcpu`的状态，值：`yes|no`
+        * `hotpluggable`属性控制在启动时启用CPU的情况下，是否可以对指定的vCPU进行热插拔。请注意，所有已禁用的vCPU必须是可热插拔的(即`enable`是`no`的`hotpluggable`必须为`yes`)。有效值为 `yes`和`no`
+        * `order`属性允许指定添加在线vCPU的顺序 
+4. IOThreads分配
+5. CPU调整
+6. 内存分配
+7. 内存备份
+8. 内存调整
+9. NUMA节点调整
+10. 阻止I / O调整
+11. 资源分区
+12. CPU模型和拓扑
+13. 事件配置
+14. 能源管理
+15. 管理程序功能
+16. 保持时间
+17. 绩效监测事件
+18. 设备
+19. Vsock
+20. 安全标签
+21. 钥匙包裹
+22. 启动安全性
+23. 我的xml配置
+    ```xml
+    <domain type='kvm'>                     <!-- 如果是Xen，则type=‘xen’，还有qemu、lxc、kqemu等参数 -->
+        <name>node1</name>                  <!-- 虚拟机名称，同一物理机唯一 -->
+        <uuid>fd3535db-2558-43e9-b067-314f48211343</uuid>   <!-- 同一物理机唯一，可用uuidgen生成，如果不指定，启动的是后自动生成 -->
+        <title>This is my first test kvm</title>            <!-- title参数提供一个对虚拟机简短的说明，它不能包含换行符。 -->
+        <description>我是个描述</description>                 <!-- 描述，libvirt不会使用这个参数 -->
+        <memory unit='KiB'>524288</memory>                  <!-- 最大内存，unit(内存单位，默认KiB)：K、KiB、M、MiB、G、GiB、T、TiB-->
+        <currentMemory>524288</currentMemory>               <!-- 实际分给给客户端的内存她小于memory的定义，默认和memory一样 -->
+        <vcpu placement='static' cpuset="1-4,^3,6" current="1">2</vcpu> <!-- 虚拟机可使用的cpu个数，可选参数有：
+                                                                                placement(分配模式):static|auto；
+                                                                                cpuset(使用那个物理CPU):逗号分割，^代表排除这个CPU；
+                                                                                current：最少CPU个数。 -->
+        <!-- 系统启动相关 -->
+        <os>
+            <type arch='x86_64' machine='pc-i440fx-vivid'>hvm</type>    <!-- arch指出系统架构类型，machine(机器类型)，查看机器类型：qemu-system-x86_64 -M ? -->
+            <loader>/usr/bin/qemu-kvm</loader>                          <!-- 全虚拟化的守护进程所在的位置 -->
+            <boot dev='hd'/>                <!-- 启动介质，第一次需要装系统可以选择cdrom光盘启动，dev参数：fd、hd、cdrom、network -->
+            <bootmenu enable='yes'/>        <!-- 表示启动按F12进入启动菜单 -->
+        </os>
+        <!-- Hypervisor的特性 -->
+        <features>
+            <acpi/>                         <!-- Advanced Configuration and Power Interface,高级配置与电源接口 -->
+            <apic/>                         <!-- Advanced Programmable Interrupt Controller,高级可编程中断控制器 -->
+            <pae/>                          <!-- Physical Address Extension,物理地址扩展 -->
+        </features>
+        <!-- 虚拟机时钟设置，offset(时间格式)：
+                UTC：同步到UTC时钟
+                localtime：同步到主机时钟所在的时区
+                timezone：The guest clock will be synchronized to the requested timezone using the timezone attribute. -->
+        <clock offset='localtime'/>
+        <!-- 控制周期，参数分别是：
+                destory:domain终止并释放占用的资源；
+                restart:domain终止并以相同配置启动；
+                preserver:domain终止但不释放资源；
+                rename-restart：domain终止并以一个新的名字重新启动 -->
+        <on_poweroff>destroy</on_poweroff>  <!-- 当客户端请求poweroff时执行特定的动作 -->
+        <on_reboot>restart</on_reboot>      <!-- 当客户端请求reboot时执行特定的动作 -->
+        <on_crash>restart</on_crash>        <!-- 当客户端崩溃时执行的动作 -->
+        <!-- 设备配置，所有的设备都是一个名为devices元素的子设备 -->
+        <devices>
+            <emulator>/usr/bin/qemu-kvm</emulator>                           <!-- 指定模拟设备二进制文件的全路径 -->
+            <!-- disk、floppy(软盘)、cdrom或者一个 paravirtualized driver(半虚拟驱动程序)，
+                他们通过一个disk元素指定 -->
+            <disk type='file' device='disk'>
+                <driver name='qemu' type='qcow2'/>
+                <source file='/home/data/kvm/node1.0.qcow2'/>           <!-- source -->
+                <target dev='vda' bus='virtio'/>
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/> <!-- 域、总线、槽、功能号，slot值同一虚拟机上唯一 -->
+            </disk>
+            <!-- 定义串口 -->
+            <serial type='pty'>
+                <target port='0'/>
+            </serial>
+            <!-- console用来代表交互性的控制台 -->
+            <console type='pty'>
+                <target port='0'/>
+            </console>
+            <!-- 利用Linux网桥连接网络 -->
+            <interface type='bridge'>
+                <mac address='fa:92:01:33:d4:fa'/>
+                <source bridge='virbr0'/>       <!-- 配置的网桥网卡名称 -->
+                <target dev='vnet0'/>           <!-- 同一网桥下相同 -->
+                <alias name='net0'/>            <!-- 别名，同一网桥下相同 -->
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>     <!-- 注意slot值唯一 -->
+            </interface>
+            <!-- 利用ovs网桥连接网络 -->
+            <interface type='bridge'>  
+                <source bridge='br-ovs0'/>  
+                <virtualport type='openvswitch'/>
+                <target dev='tap0'/>
+                <model type='virtio'/>  
+            </interface>
+            <!-- 配置成pci直通虚拟机连接网络，SR-IOV网卡的VF场景 -->
+            <hostdev mode='subsystem' type='pci' managed='yes'>
+                <source>
+                    <address domain='0x0000' bus='0x03' slot='0x00' function='0x0'/>
+                </source>
+            </hostdev>
+            <!-- 利用vhostuser连接ovs端口 -->
+            <interface type='vhostuser'>
+                <mac address='fa:92:01:33:d4:fa'/>
+                <source type='unix' path='/var/run/vhost-user/tap0' mode='client'/>  
+                <model type='virtio'/>
+                <driver vringbuf='2048'/>
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>  
+            </interface>
+            <interface type='network'>              <!-- 基于虚拟局域网的网络 -->
+                <mac address='52:54:4a:e1:1c:84'/>  <!-- 可用命令生成，见下面的补充 -->
+                <source network='default'/>         <!-- 默认 -->
+                <target dev='vnet1'/>               <!-- 同一虚拟局域网的值相同 -->
+                <alias name='net1'/>
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>     <!-- 注意slot值 -->
+            </interface>
+            <graphics type='vnc' port='5900' autoport='yes' listen='0.0.0.0' keymap='en-us'/>   <!-- 配置vnc，windows下可以使用vncviewer登录，获取vnc端口号：virsh vncdisplay vm0 -->
+                <listen type='address' address='0.0.0.0'/>
+            </graphics>
+        </devices>
+    </domain>
+    ```
+
 ## 管理工具
 
 > 这里直接写命令的创建方式和介绍，涉及到的参数的意义，可从[优化和介绍kvm里](#优化和介绍KVM)详细查看
 > 默认的KVM虚拟机工作目录为`/var/lib/libvirt`，配置文件目录`/etc/libvirt/qemu`,主机名称+xml结尾的文件即其相关虚拟机的配置文件，需要修改其配置，也可以直接修改xml文件实现（不建议）。其中autostart目录定义的配置文件会随主机一起启动，而network定义了虚拟机使用桥接网络时的网关网卡的相关配置。
 
-1. qemu-img
-    > 创建镜像文件，参考[磁盘存储](#磁盘存储)
+### qemu-img
+
+> 创建镜像文件，参考[磁盘存储](#磁盘存储)
+
+```sh
+qemu-img create -f qcow2 node1.qcow2 10G  # 创建大小为10G，qcow2格式的镜像文件
+qemu-img info node1.qcow2                 # 查看镜像信息
+qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
+```
+
+### virsh
+
+> virsh 是一个用于监控系统程序和客户机虚拟机器的命令行接口（CLI）工具。virsh 命令行工具建立在 libvirt 管理 API，并作为可选择的一个运行方式来替代 qemu-kvm 命令和图形界面的 virt-manager 应用。无特权的用户以只读的方式使用 virsh 命令；有根用户权限的用户可以使用该命令的所有功能。virsh 是一个对虚拟环境的管理任务进行脚本化的理想工具。另外，virsh 工具是 guest 操作系统 域的一个主要管理接口，可以用于创造、暂停和关闭“域”，或罗列现有域。这一工具作为 libvirt-client 软件包中的一部分被安装。
+>
+> KVM虚拟机依靠两个主要文件来启动，一个是img文件，一个是xml配置文件
+
+* 安装
 
     ```sh
-    qemu-img create -f qcow2 node1.qcow2 10G  # 创建大小为10G，qcow2格式的镜像文件
-    qemu-img info node1.qcow2                 # 查看镜像信息
-    qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
+    dnf install libvirt-client
+    or
+    yum install libvirt-client
     ```
 
-2. virsh
+* 命令常用方式
 
-    > virsh 是一个用于监控系统程序和客户机虚拟机器的命令行接口（CLI）工具。virsh 命令行工具建立在 libvirt 管理 API，并作为可选择的一个运行方式来替代 qemu-kvm 命令和图形界面的 virt-manager 应用。无特权的用户以只读的方式使用 virsh 命令；有根用户权限的用户可以使用该命令的所有功能。virsh 是一个对虚拟环境的管理任务进行脚本化的理想工具。另外，virsh 工具是 guest 操作系统 域的一个主要管理接口，可以用于创造、暂停和关闭“域”，或罗列现有域。这一工具作为 libvirt-client 软件包中的一部分被安装。
-    >
-    > KVM虚拟机依靠两个主要文件来启动，一个是img文件，一个是xml配置文件
+    ```sh
+    virsh define node1.xml          # 导入虚拟机配置（xml格式）（这个虚拟机还不是活动的)
+    virsh create node1.xml          # 创建虚拟机（创建后，虚拟机立即执行，成为活动主机）
+    virsh start node1               # 开启node1虚拟机
+    virsh suspend node1             # 暂停虚拟机（不释放资源）
+    virsh resume node1              # 启动暂停的虚拟机
+    virsh shutdown node1            # 正常关闭虚拟机
+    virsh destroy node1             # 强制关闭虚拟机
+    virsh dominfo node1             # 查看虚拟机的基本信息
+    virsh domname 2                 # 查看序号为2的虚拟机别名
+    virsh domid node1               # 查看虚拟机的序号
+    virsh domstate node1            # 查看虚拟机的当前状态
+    virsh list --all                # 查看所有虚拟机
+    virsh domstate node1            # 查看虚拟机的xml配置（可能和定义虚拟机时的配置不同，因为当虚拟机启动时，需要给虚拟机分配id号、uuid、vnc端口号等等）
+    virsh setmem node1 512000       # 给不活动的虚拟机设置内存大小
+    virsh setvcpus node1 4          # 给不活动的虚拟机设置CPU个数
+    virsh destroy node1             # 销毁虚拟机，不删除虚拟机配置
+    virsh undefine node1            # 删除虚拟机配置
+    virsh dumpxml node1             # 显示虚拟机的xml配置
+    virsh edit node1                # 编辑xml配置文件
+    virsh vncdisplay node1          # 获取虚拟机的vnc连接端口
+    ```
 
-    * 安装
+* 存储池来管理存储
 
-        ```sh
-        dnf install libvirt-client
-        or
-        yum install libvirt-client
-        ```
+    ```sh
+    virsh pool-define-as kvm_images dir - - - - "/home/data/kvm/pool" # 定义存储池
+    virsh pool-build kvm_images     # 建立基于文件夹的存储池
+    virsh pool-start kvm_images     # 使存储池生效
+    virsh pool-info kvm_images      # 查看存储池详情
+    virsh pool-list --all           # 查看所有存储池
 
-    * 命令常用方式
+    # 创建完存储池后，就可以通过创建卷的方法来创建虚拟机的磁盘
+    virsh vol-create-as kvm_images node1.qcow2 10G --format qcow2   # 创建卷
+    virsh pool-refresh kvm_images   # 刷新存储池
+    virsh vol-info kvm_images       # 查看存储池里边的存储卷信息
+    virsh vol-info node1.qcow2 kvm_images       # 查看存储池里边单独一个卷的信息
+    virsh vol-dumpxml node1.qcow2 kvm_images    # 查看存储池里边的一个卷的详细信息
+    ```
 
-        ```sh
-        virsh define node1.xml          # 导入虚拟机配置（xml格式）（这个虚拟机还不是活动的)
-        virsh create node1.xml          # 创建虚拟机（创建后，虚拟机立即执行，成为活动主机）
-        virsh start node1               # 开启node1虚拟机
-        virsh suspend node1             # 暂停虚拟机（不释放资源）
-        virsh resume node1              # 启动暂停的虚拟机
-        virsh shutdown node1            # 正常关闭虚拟机
-        virsh destroy node1             # 强制关闭虚拟机
-        virsh dominfo node1             # 查看虚拟机的基本信息
-        virsh domname 2                 # 查看序号为2的虚拟机别名
-        virsh domid node1               # 查看虚拟机的序号
-        virsh domstate node1            # 查看虚拟机的当前状态
-        virsh list --all                # 查看所有虚拟机
-        virsh domstate node1            # 查看虚拟机的xml配置（可能和定义虚拟机时的配置不同，因为当虚拟机启动时，需要给虚拟机分配id号、uuid、vnc端口号等等）
-        virsh setmem node1 512000       # 给不活动的虚拟机设置内存大小
-        virsh setvcpus node1 4          # 给不活动的虚拟机设置CPU个数
-        virsh destroy node1             # 销毁虚拟机，不删除虚拟机配置
-        virsh undefine node1            # 删除虚拟机配置
-        virsh dumpxml node1             # 显示虚拟机的xml配置
-        virsh edit node1                # 编辑xml配置文件
-        virsh vncdisplay node1          # 获取虚拟机的vnc连接端口
-        ```
-    * 存储池来管理存储
+* 虚拟机备份
+    ```sh
+    virsh save --bypass-cache node1 /var/lib/libvirt/save/node1_1.save --running    # 备份
+    virsh restore /var/lib/libvirt/save/node1_1.save --bypass-cache --running       # 还原
+    ```
 
-        ```sh
-        virsh pool-define-as kvm_images dir "/home/data/kvm/images" # 定义存储池
-        virsh pool-build kvm_images     # 建立基于文件夹的存储池
-        virsh pool-start kvm_images     # 使存储池生效
-        virsh pool-info kvm_images      # 查看存储池详情
-        virsh pool-list --all           # 查看所有存储池
+* 虚拟机快照
 
-        # 创建完存储池后，就可以通过创建卷的方法来创建虚拟机的磁盘
-        virsh vol-create-as kvm_images node1.qcow2 10G --format qcow2   # 创建卷
-        virsh pool-refresh kvm_images   # 刷新存储池
-        virsh vol-info kvm_images       # 查看存储池里边的存储卷信息
-        virsh vol-info node1.qcow2 kvm_images       # 查看存储池里边单独一个卷的信息
-        virsh vol-dumpxml node1.qcow2 kvm_images    # 查看存储池里边的一个卷的详细信息
-        ```
+    > 如果要使用kvm的快照功能，就必须使用qcow2的磁盘格式，而raw只支持内存快照，如果不是，请修改
 
-    * 虚拟机备份
-        ```sh
-        virsh save --bypass-cache node1 /var/lib/libvirt/save/node1_1.save --running    # 备份
-        virsh restore /var/lib/libvirt/save/node1_1.save --bypass-cache --running       # 还原
-        ```
+    ```sh
+    virsh snapshot-create node1 node1.snap1 # 创建快照
+    virsh snapshot-revert node1 node1.snap1 # 恢复快照
+    virsh snapshot-list node1               # 查看快照
+    virsh snapshot-delete node1 node1.snap1 # 删除快照
+    ```
 
-    * 虚拟机快照
+* 虚拟机迁移
 
-        > 如果要使用kvm的快照功能，就必须使用qcow2的磁盘格式，而raw只支持内存快照，如果不是，请修改
+    > KVM虚拟机依靠两个主要文件来启动，一个是img文件，一个是xml配置文件,因此迁移的时候，可以直接迁移这两个文件就能实现静态迁移。如果img文件存放在共享存储，则更为方便，只用迁移xml配置文件，就可以实现静态迁移。
+    > 当然，virsh命令也可以迁移虚拟机，不过要求目标主机与当前主机的应用环境须保持一致，其命令格式如下：
 
-        ```sh
-        virsh snapshot-create node1 node1.snap1 # 创建快照
-        virsh snapshot-revert node1 node1.snap1 # 恢复快照
-        virsh snapshot-list node1               # 查看快照
-        virsh snapshot-delete node1 node1.snap1 # 删除快照
-        ```
+    ```sh
+    virsh migrate --live node1 qemu+tcp//destnationip/system tcp://destnationip
+    ```
 
-    * 虚拟机迁移
+* 通过xml创建虚拟机，xml写法请参考[xml](#libvirt配置文件)
 
-        > KVM虚拟机依靠两个主要文件来启动，一个是img文件，一个是xml配置文件,因此迁移的时候，可以直接迁移这两个文件就能实现静态迁移。如果img文件存放在共享存储，则更为方便，只用迁移xml配置文件，就可以实现静态迁移。
-        > 当然，virsh命令也可以迁移虚拟机，不过要求目标主机与当前主机的应用环境须保持一致，其命令格式如下：
+### virt-manager
 
-        ```sh
-        virsh migrate --live node1 qemu+tcp//destnationip/system tcp://destnationip
-        ```
+> virt-manager 是一个用于管理虚拟机器的简单的图形工具。它所提供的功能用以控制现有机器寿命周期、储备新机器、管理虚拟网络、访问虚拟机器的图形控制台并查看性能数据。
 
-    * 创建虚拟机的xml配置文件内容介绍
-        ```xml
-        <domain type='kvm'>             <!-- 如果是Xen，则type=‘xen’ -->
+* 安装
 
-            <name>node1</name>                <!-- 虚拟机名称，同一物理机唯一 -->
+    ```sh
+    dnf install virt-manager
+    or
+    yum install virt-manager
+    ```
 
-            <uuid>fd3535db-2558-43e9-b067-314f48211343</uuid>   <!-- 同一物理机唯一，可用uuidgen生成 -->
+### virt-install
 
-            <memory>524288</memory>         <!-- 限制内存大小 -->
+> virt-install 是一个用来配置新的虚拟机器的命令行工具。它通过使用连续的控制台、SPICE 或 VNC 客户/服务器成对图形，支持基于文本和图形的安装。安装介质可以是本地的，或已有的远程 NFS、HTTP 或 FTP 服务器。考虑到便捷的自动化安装，还可以通过配置此工具实现在无需人工参与的情况下运行，并在安装完成时快速启动客机。此工具以 python-virtinst 软件包的一部分进行安装。
 
-            <currentMemory>524288</currentMemory>               <!-- memory这两个值最好设成一样 -->
+* 安装
 
-            <vcpu>2</vcpu>                  <!-- 虚拟机可使用的cpu个数，查看物理机可用CPU个数：cat /proc/cpuinfo |grep processor | wc -l -->
+    ```sh
+    dnf install virt-install
+    or
+    yum install virt-install
+    ```
 
-            <os>
-                <type arch='x86_64' machine='pc-i440fx-vivid'>hvm</type>    <!-- arch指出系统架构类型，machine 则是机器类型，查看机器类型：qemu-system-x86_64 -M ? -->
-                <loader>/usr/bin/kvm</loader>                <!-- 全虚拟化的守护进程所在的位置 -->
-                <boot dev='hd'/>                <!-- 启动介质，第一次需要装系统可以选择cdrom光盘启动 -->
-                <bootmenu enable='yes'/>        <!-- 表示启动按F12进入启动菜单 -->
-            </os>
+* 常用参数
 
-            <features>
-                <acpi/>                         <!-- Advanced Configuration and Power Interface,高级配置与电源接口 -->
-                <apic/>                         <!-- Advanced Programmable Interrupt Controller,高级可编程中断控制器 -->
-                <pae/>                          <!-- Physical Address Extension,物理地址扩展 -->
-            </features>
+    ```sh
+    virt-install --connect qemu:///system \ # 如果使用kvm安装，并且使用的root，默认为此，基于xen或者其它，可参考man virt-install
+    --n test1 \                             # 指定虚拟机的显示名称
+    --c /mnt/centos6.4-x86_64.iso \         # 指定安装镜像，也可以指定cdrom直接安装，如:-c /dev/sr0
+    --r 2048 \                              # 指定内存，默认为MB
+    --arch=x86_64 \                         # 指定arch模型
+    --vcpus=2 --check-cpu --cpuset=0-1 \    # 指定cpu0,1作为虚拟机的CPU，此处绑定了CPU
+    --os-type=linux --os-variant=rhel6 \    # 指定系统类型和版本
+    --disk path=/var/lib/libvirt/images/node.qcow2,device=disk,bus=virtio,spare=true -s 10 \ # 指定磁盘信息，使用virtio驱动加载
+    --network bridge=br0 \                  # 指定桥接模式，并指定通过br0网卡进行桥接
+    --noautoconsol --autostart \            # 不自动开启控制台，并且随主机自启动
+    --vnc \                                 # 提供vnc端口访问，在这里可以设置密码，也可以不设置
+    --force
+    ```
 
-            <clock offset='localtime'/>     <!-- 虚拟机时钟设置，这里表示本地本机时间 -->
+### virt-viewer
 
-            <on_poweroff>destroy</on_poweroff>                          <!-- 突发事件动作 -->
+### guestfish
 
-            <on_reboot>restart</on_reboot>
+> guestfish 是一个命令行工具，用来检验和修改客机的文件系统。此工具使用 libguestfs，并显示所有 guestfs API 所提供的功能。这个工具包括在同名的软件包中，称为 guestfish。
+> **在运行中的虚拟机上使用 guestfish 会引起磁盘镜像损坏。若一个正在运行中的虚拟机正在使用磁盘镜像，则需搭配 --ro（只读）共同使用 guestfish 命令。**
 
-            <on_crash>restart</on_crash>
+### GNOME Boxes
 
-            <!-- 设备配置 -->
-            <devices>
-                <emulator>/usr/bin/kvm</emulator>                           <!-- 如果是Xen则是/usr/lib/xen/binqemu-dm -->
+> Boxes 是一个简单的图形桌面虚拟化工具，用来查看和访问虚拟机和远程系统。Boxes 提供了一种方法，即以最小的配置来测试桌面上的不同操作系统和应用。虚拟系统可以手动也可使用快速安装功能，快速安装功能可以通过优化设置来自动预配置虚拟机。这个工具包括在同名的软件包中，被称作 gnome-boxes。
+> 需要gnome桌面环境
 
-                <!-- 硬盘1 -->
-                <disk type='file' device='disk'>
-                    <driver name='qemu' type='qcow2'/>
-                    <source file='/home/data/kvm/node1.0.qcow2'/>
-                    <target dev='vda' bus='virtio'/>
-                    <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/> <!-- 域、总线、槽、功能号，slot值同一虚拟机上唯一 -->
-                </disk>
+* 安装
 
-                <!-- 硬盘2 -->
-                <disk type='file' device='disk'>  
-                    <driver name='qemu' type='qcow2'/>
-                    <source file='/home/data/kvm/node1.1.qcow2'/>
-                    <target dev='vdb' bus='virtio'/>  
-                </disk>
+    ```sh
+    dnf install gnome-boxes
+    or
+    yum install gnome-boxes
+    ```
 
-                <!-- 光盘 -->
-                <disk type='file' device='cdrom'>
-                    <driver name='qemu' type='raw'/>
-                    <source file='/home/data/images/CentOS-7-x86_64-Minimal-1810.iso'/>
-                    <target dev='hdc' bus='ide'/>
-                    <readonly/>
-                </disk>
+### 其他工具
 
-                <!-- 定义串口 -->
-                <serial type='pty'>
-                    <target port='0'/>
-                </serial>
-
-                <!-- console用来代表交互性的控制台 -->
-                <console type='pty'>
-                    <target port='0'/>
-                </console>
-
-                <!-- 利用Linux网桥连接网络 -->
-                <interface type='bridge'>
-                    <mac address='fa:92:01:33:d4:fa'/>
-                    <source bridge='virbr0'/>       <!-- 配置的网桥网卡名称 -->
-                    <target dev='vnet0'/>           <!-- 同一网桥下相同 -->
-                    <alias name='net0'/>            <!-- 别名，同一网桥下相同 -->
-                    <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>     <!-- 注意slot值唯一 -->
-                </interface>
-
-                <!-- 利用ovs网桥连接网络 -->
-                <interface type='bridge'>  
-                    <source bridge='br-ovs0'/>  
-                    <virtualport type='openvswitch'/>
-                    <target dev='tap0'/>
-                    <model type='virtio'/>  
-                </interface>
-
-                <!-- 配置成pci直通虚拟机连接网络，SR-IOV网卡的VF场景 -->
-                <hostdev mode='subsystem' type='pci' managed='yes'>
-                    <source>
-                        <address domain='0x0000' bus='0x03' slot='0x00' function='0x0'/>
-                    </source>
-                </hostdev>
-
-                <!-- 利用vhostuser连接ovs端口 -->
-                <interface type='vhostuser'>
-                    <mac address='fa:92:01:33:d4:fa'/>
-                    <source type='unix' path='/var/run/vhost-user/tap0' mode='client'/>  
-                    <model type='virtio'/>
-                    <driver vringbuf='2048'/>
-                    <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>  
-                </interface>
-
-                <interface type='network'>              <!-- 基于虚拟局域网的网络 -->
-                    <mac address='52:54:4a:e1:1c:84'/>  <!-- 可用命令生成，见下面的补充 -->
-                    <source network='default'/>         <!-- 默认 -->
-                    <target dev='vnet1'/>               <!-- 同一虚拟局域网的值相同 -->
-                    <alias name='net1'/>
-                    <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>     <!-- 注意slot值 -->
-                </interface>
-
-                <graphics type='vnc' port='5900' autoport='yes' listen='0.0.0.0' keymap='en-us'/>   <!-- 配置vnc，windows下可以使用vncviewer登录，获取vnc端口号：virsh vncdisplay vm0 -->
-                    <listen type='address' address='0.0.0.0'/>
-                </graphics>
-            </devices>
-        </domain>
-        ```
-
-3. virt-manager
-
-    > virt-manager 是一个用于管理虚拟机器的简单的图形工具。它所提供的功能用以控制现有机器寿命周期、储备新机器、管理虚拟网络、访问虚拟机器的图形控制台并查看性能数据。
-
-    * 安装
-
-        ```sh
-        dnf install virt-manager
-        or
-        yum install virt-manager
-        ```
-
-4. virt-install
-
-    > virt-install 是一个用来配置新的虚拟机器的命令行工具。它通过使用连续的控制台、SPICE 或 VNC 客户/服务器成对图形，支持基于文本和图形的安装。安装介质可以是本地的，或已有的远程 NFS、HTTP 或 FTP 服务器。考虑到便捷的自动化安装，还可以通过配置此工具实现在无需人工参与的情况下运行，并在安装完成时快速启动客机。此工具以 python-virtinst 软件包的一部分进行安装。
-
-    * 安装
-
-        ```sh
-        dnf install virt-install
-        or
-        yum install virt-install
-        ```
-
-    * 常用参数
-
-        ```sh
-        virt-install --connect qemu:///system \ # 如果使用kvm安装，并且使用的root，默认为此，基于xen或者其它，可参考man virt-install
-        --n test1 \                             # 指定虚拟机的显示名称
-        --c /mnt/centos6.4-x86_64.iso           # 指定安装镜像，也可以指定cdrom直接安装，如:-c /dev/sr0
-        --r 2048 \                              # 指定内存，默认为MB
-        --arch=x86_64 \                         # 指定arch模型
-        --vcpus=2 --check-cpu --cpuset=0-1 \    # 指定cpu0,1作为虚拟机的CPU，此处绑定了CPU
-        --os-type=linux --os-variant=rhel6 \    # 指定系统类型和版本
-        --disk path=/var/lib/libvirt/images/node.qcow2,device=disk,bus=virtio,spare=true -s 10 \ # 指定磁盘信息，使用virtio驱动加载
-        --network bridge=br0 \                  # 指定桥接模式，并指定通过br0网卡进行桥接
-        --noautoconsol --autostart \            # 不自动开启控制台，并且随主机自启动
-        --vnc \                                 # 提供vnc端口访问，在这里可以设置密码，也可以不设置
-        --force
-        ```
-
-5. guestfish
-
-    > guestfish 是一个命令行工具，用来检验和修改客机的文件系统。此工具使用 libguestfs，并显示所有 guestfs API 所提供的功能。这个工具包括在同名的软件包中，称为 guestfish。
-    > **在运行中的虚拟机上使用 guestfish 会引起磁盘镜像损坏。若一个正在运行中的虚拟机正在使用磁盘镜像，则需搭配 --ro（只读）共同使用 guestfish 命令。**
-
-6. GNOME Boxes
-
-    > Boxes 是一个简单的图形桌面虚拟化工具，用来查看和访问虚拟机和远程系统。Boxes 提供了一种方法，即以最小的配置来测试桌面上的不同操作系统和应用。虚拟系统可以手动也可使用快速安装功能，快速安装功能可以通过优化设置来自动预配置虚拟机。这个工具包括在同名的软件包中，被称作 gnome-boxes。
-    > 需要gnome桌面环境
-
-    * 安装
-
-        ```sh
-        dnf install gnome-boxes
-        or
-        yum install gnome-boxes
-        ```
-
-7. 其他工具
-    请查看redhat官方介绍[其他工具](https://access.redhat.com/documentation/zh-cn/red_hat_enterprise_linux/7/html/virtualization_getting_started_guide/sect-virtualization_getting_started-tools-other)
+请查看redhat官方介绍[其他工具](https://access.redhat.com/documentation/zh-cn/red_hat_enterprise_linux/7/html/virtualization_getting_started_guide/sect-virtualization_getting_started-tools-other)
 
 ## 优化和介绍KVM
 
 ### CPU优化
 
-* 要考虑CPU的数量问题，所有guestcpu的总数目不要超过物理机CPU总数目，如果超过，则将对性能带来严重影响，建议选择复制主机CPU配置。
+* 要考虑CPU的数量问题，所有guest cpu的总数目不要超过物理机CPU总数目，如果超过，则将对性能带来严重影响，建议选择复制主机CPU配置。
 
 * “CPU 型号 ”（CPU model）规定了哪些主机 CPU 功能对客机操作系统有效。 qemu-kvm 和 libvirt 包含了几种当前处理器型号的定义，允许用户启用仅在新型 CPU 型号中可用的 CPU 功能。 对客机有效的的 CPU 功能取决于主机 CPU 的支持、内核以及 qemu-kvm 代码。
 
