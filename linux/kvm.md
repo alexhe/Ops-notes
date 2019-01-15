@@ -1,25 +1,4 @@
-# kvm学习笔记 <!-- omit in toc -->
-
-1. [查看是否支持kvm虚拟化](#查看是否支持kvm虚拟化)
-2. [编译安装qemu和libvirt（未完成）](#编译安装qemu和libvirt未完成)
-3. [YUM安装](#yum安装)
-4. [libvirt配置文件](#libvirt配置文件)
-   1. [主机xml配置文件](#主机xml配置文件)
-5. [管理工具](#管理工具)
-   1. [qemu-img](#qemu-img)
-   2. [virsh](#virsh)
-   3. [virt-manager](#virt-manager)
-   4. [virt-install](#virt-install)
-   5. [virt-viewer](#virt-viewer)
-   6. [guestfish](#guestfish)
-   7. [GNOME Boxes](#gnome-boxes)
-   8. [其他工具](#其他工具)
-6. [优化和介绍KVM](#优化和介绍kvm)
-   1. [CPU优化](#cpu优化)
-   2. [内存优化](#内存优化)
-   3. [I/O等设备使用半虚拟化设备](#io等设备使用半虚拟化设备)
-   4. [磁盘&存储](#磁盘存储)
-   5. [KVM网络](#kvm网络)
+# kvm学习笔记
 
 ## 查看是否支持kvm虚拟化
 
@@ -207,10 +186,43 @@
         * `ID`属性指定libvirt使用的vcpu id,注意：某些情况下，guest中现实的`vcpu id`可能和`libvirt`不一样，有效范围从`0`到由`vcpu`定义的最大CPU减一
         * `enable`属性表示允许控制`vcpu`的状态，值：`yes|no`
         * `hotpluggable`属性控制在启动时启用CPU的情况下，是否可以对指定的vCPU进行热插拔。请注意，所有已禁用的vCPU必须是可热插拔的(即`enable`是`no`的`hotpluggable`必须为`yes`)。有效值为 `yes`和`no`
-        * `order`属性允许指定添加在线vCPU的顺序 
+        * `order`属性允许指定添加在线vCPU的顺序
+
 4. IOThreads分配
+    > IOThreads是专用的事件循环线程，用于支持的磁盘设备执行块I / O请求，以提高可扩展性，尤其是在具有许多LUN的SMP主机/ guest虚拟机上；有时间可以研究下。
+    > [官方文档](https://libvirt.org/formatdomain.html#elementsIOThreadsAllocation)
+
 5. CPU调整
+    > 调整CPU的详细参数，配置的很少，可以参考官方文档，有时间可以研究下
+    > [官方文档](https://libvirt.org/formatdomain.html#elementsCPUTuning)
+
 6. 内存分配
+    > 个人的一些理解
+
+    ```xml
+    <domain>
+        ...
+        <maxMemory slots='16' unit='KiB'>1524288</maxMemory>
+        <memory unit='KiB'>524288</memory>
+        <currentMemory unit='KiB'>524288</currentMemory>
+        ...
+    </domain>
+    ```
+    * memory
+        `memory`元素定义了，guest虚拟机启动的时候最大内存（即最小内存分配），包括启动指定的内存和稍后添加的内存，`unit`属性指定内存容量的单位，默认`KiB`,
+        可选单位有：
+        * 字节:`b` or `bytes`
+        * 千字节:`KB` (1,000 bytes), `KiB` or `k` (1024 bytes)
+        * 兆字节:`MB` (1,000,000 bytes), `M` or `Mib` (1,048,576 bytes)
+        * 千兆字节:`GB` (1,073,741,824 bytes)
+        * 太字节:`TB` (1,000,000,000,000 bytes), `T` or `TiB` (1,099,511,627,776 bytes)
+        如果guest虚拟机配置了[NUMA](https://libvirt.org/formatdomain.html#elementsCPU),则`memory`元素可以省略，可选属性`dumpCore`用来控制内存崩溃的时候是否生成错误信息到coredump，值：`on` or `off`
+    * maxMemory
+        `maxMemory`元素定义guest最大内存分配，`unit`属性指定内存容量的单位，默认`KiB`, 可选单位和`memory`元素一样
+        `slots`属性指定可用于向guest虚拟机添加内存的插槽数。边界是特定于管理程序的。
+        请注意，由于通过内存hotplug添加的内存块的对齐，可能无法实现此元素指定的完整大小分配。
+    * currentMemory
+        `currentMemory`元素定义guest的实际分配的内存大小，`unit`属性与`memory`相同。
 7. 内存备份
 8. 内存调整
 9. NUMA节点调整
