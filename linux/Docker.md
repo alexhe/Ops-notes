@@ -11,6 +11,7 @@
 > 采用yum源安装，方便，也可以二进制安装，编译的话不建议了，浪费时间，如果你要研究代码的话可以编译看下
 
 * 开启ip转发
+
 > centos6 参考这里：<https://blog.csdn.net/qianye_111/article/details/78987161>
 
     ```shell

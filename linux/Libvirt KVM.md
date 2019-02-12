@@ -1,11 +1,34 @@
 # kvm学习笔记
 
+1. [kvm学习笔记](#kvm学习笔记)
+   1. [查看是否支持kvm虚拟化](#查看是否支持kvm虚拟化)
+   2. [编译安装qemu和libvirt（未完成）](#编译安装qemu和libvirt未完成)
+   3. [YUM安装](#yum安装)
+   4. [libvirt 配置文件](#libvirt-配置文件)
+      1. [libvirt 远程配置](#libvirt-远程配置)
+      2. [Guest xml配置文件介绍](#guest-xml配置文件介绍)
+   5. [管理工具](#管理工具)
+      1. [qemu-img](#qemu-img)
+      2. [virsh](#virsh)
+      3. [virt-manager](#virt-manager)
+      4. [virt-install](#virt-install)
+      5. [virt-viewer](#virt-viewer)
+      6. [guestfish](#guestfish)
+      7. [GNOME Boxes](#gnome-boxes)
+      8. [其他工具](#其他工具)
+   6. [磁盘&存储配置](#磁盘存储配置)
+   7. [KVM网络互联配置](#kvm网络互联配置)
+   8. [优化KVM](#优化kvm)
+      1. [CPU优化](#cpu优化)
+      2. [内存优化](#内存优化)
+      3. [I/O等设备使用半虚拟化设备](#io等设备使用半虚拟化设备)
+
 ## 查看是否支持kvm虚拟化
 
-1. CPU必需支持虚拟化，可以在/proc/cpuinfo文件中想找flags，如果是inter的显示为vmx，amd的显示为svm
-2. CPU必需支持64位操作系统，可以在上述文件中查找lm标记，如果有则支持
-3. 系统必需为64为的RHEL，且系统版本为RHEL6.4及以上为最佳
-4. 必需在BIOS里开启CPU的VT功能
+1. CPU必需支持虚拟化，可以在/proc/cpuinfo文件中想找flags，如果是inter的显示为vmx，amd的显示为svm `cat /proc/cpuinfo | egrep "(vmx|svm)"`
+2. CPU必需支持64位操作系统，可以在上述文件中查找lm标记，如果有则支持 `cat /proc/cpuinfo | egrep lm`
+3. 系统必需为64为的RHEL，且系统版本为RHEL6.4及以上为最佳`uname -a`
+4. 必需在BIOS里开启CPU的VT功能 `lsmod | grep kvm`
 
 ## 编译安装qemu和libvirt（未完成）
 
@@ -58,15 +81,18 @@
     yum install qemu-kvm libvirt -y
     ```
 
-## libvirt配置文件
+## libvirt 配置文件
 
-> libvirt的默认配置文件在：`/etc/libvirt`
-> libvirt的默认工作区在：`/var/cache/libvirt`
+> libvirt 的默认配置文件在：`/etc/libvirt`
+> libvirt 的默认工作区在：`/var/cache/libvirt`
 
-### 主机xml配置文件
+### libvirt 远程配置
+
+### Guest xml配置文件介绍
 
 > 验证xml文件`virt-xml-validate /path/to/XML/file`
 > [官方文档](https://libvirt.org/drvqemu.html#xmlconfig)
+> 主要介绍xml中每一行的意思，当然也可以手动创建适合您的`domain xml`文件然后通过`virsh define` 命令来定义一个虚拟机,然后通过`virsh start`来启动虚拟机
 
 1. 通用根配置文件
 
@@ -88,7 +114,7 @@
     * `name`
         虚拟机的名称，同一个物理机器唯一
     * `uuid`
-        全局唯一标识符，格式必须符合RFC 4122，如果在定义/创建新guest时省略，则会生成随机UUID。也可以通过[sysinfo](https://libvirt.org/formatdomain.html#elementsSysinfo)规范提供uuid
+        全局唯一标识符，格式必须符合RFC 4122，如果在定义/创建新`domain`时省略，则会生成随机UUID。也可以通过[sysinfo](https://libvirt.org/formatdomain.html#elementsSysinfo)规范提供uuid
     * `genid`
         和`uuid`元素一样。
     * `title`
@@ -173,27 +199,27 @@
     </domain>
     ```
 
-    * vcpu
+    * `vcpu`
         此元素的内容定义为guest虚拟机操作系统分配的最大虚拟CPU数，必须介于1和虚拟机管理程序支持的最大值之间。最好不要超过实际CPU数量
-      * cpuset
+      * `cpuset`
         可选属性cpuset是以逗号分隔的物理CPU编号列表，默认情况下可以固定域进程和虚拟CPU。该列表中的每个元素可以是单个CPU编号，一系列CPU编号，`^`后跟要从先前范围中排除的CPU编号。
-      * current
+      * `current`
         是否应启用最少CPU数量
-      * placement
+      * `placement`
         placement(分配模式):static|auto，如果通过`cpuset`来指定CPU个数，必须为`static`。如果`placement`为`static`，`cpuset`并没有指定，将固定所有可用物理CPU
-    * vcpus
+    * `vcpus`
         控制各个vCPU的状态
         * `ID`属性指定libvirt使用的vcpu id,注意：某些情况下，guest中现实的`vcpu id`可能和`libvirt`不一样，有效范围从`0`到由`vcpu`定义的最大CPU减一
-        * `enable`属性表示允许控制`vcpu`的状态，值：`yes|no`
+        * `enable`属性表示控制`vcpu`的状态，值：`yes|no`；当值为`no`的时候开机不启用这个CPU，必须启动热插拔。
         * `hotpluggable`属性控制在启动时启用CPU的情况下，是否可以对指定的vCPU进行热插拔。请注意，所有已禁用的vCPU必须是可热插拔的(即`enable`是`no`的`hotpluggable`必须为`yes`)。有效值为 `yes`和`no`
         * `order`属性允许指定添加在线vCPU的顺序
 
 4. IOThreads分配
-    > IOThreads是专用的事件循环线程，用于支持的磁盘设备执行块I / O请求，以提高可扩展性，尤其是在具有许多LUN的SMP主机/ guest虚拟机上；有时间可以研究下。
+    > IOThreads是专用的事件循环线程，用于支持的磁盘设备执行块I/O请求，以提高可扩展性，尤其是在具有许多LUN的SMP主机/ guest虚拟机上；有时间可以研究下。
     > [官方文档](https://libvirt.org/formatdomain.html#elementsIOThreadsAllocation)
 
 5. CPU调整
-    > 调整CPU的详细参数，配置的很少，可以参考官方文档，有时间可以研究下
+    > 调整CPU的高级参数，配置的很少，可以参考官方文档，有时间可以研究下
     > [官方文档](https://libvirt.org/formatdomain.html#elementsCPUTuning)
 
 6. 内存分配
@@ -202,14 +228,14 @@
     ```xml
     <domain>
         ...
-        <maxMemory slots='16' unit='KiB'>1524288</maxMemory>
         <memory unit='KiB'>524288</memory>
+        <maxMemory slots='16' unit='KiB'>1524288</maxMemory>
         <currentMemory unit='KiB'>524288</currentMemory>
         ...
     </domain>
     ```
     * memory
-        `memory`元素定义了，guest虚拟机启动的时候最大内存（即最小内存分配），包括启动指定的内存和稍后添加的内存，`unit`属性指定内存容量的单位，默认`KiB`,
+        `memory`元素定义了，guest虚拟机启动的时候最大内存，包括启动指定的内存和稍后添加的内存(后期通过`virsh`添加内存将自动把这里的的数值调大)，`unit`属性指定内存容量的单位，默认`KiB`,
         可选单位有：
         * 字节:`b` or `bytes`
         * 千字节:`KB` (1,000 bytes), `KiB` or `k` (1024 bytes)
@@ -218,20 +244,305 @@
         * 太字节:`TB` (1,000,000,000,000 bytes), `T` or `TiB` (1,099,511,627,776 bytes)
         如果guest虚拟机配置了[NUMA](https://libvirt.org/formatdomain.html#elementsCPU),则`memory`元素可以省略，可选属性`dumpCore`用来控制内存崩溃的时候是否生成错误信息到coredump，值：`on` or `off`
     * maxMemory
-        `maxMemory`元素定义guest最大内存分配，`unit`属性指定内存容量的单位，默认`KiB`, 可选单位和`memory`元素一样
-        `slots`属性指定可用于向guest虚拟机添加内存的插槽数。边界是特定于管理程序的。
-        请注意，由于通过内存hotplug添加的内存块的对齐，可能无法实现此元素指定的完整大小分配。
+        `maxMemory`元素定义guest通过`hot-plug`可以达到的最大内存，`unit`属性指定内存容量的单位，默认`KiB`, 可选单位和`memory`元素一样
+        `slots`属性指定可用于向guest虚拟机添加内存的插槽数，每个插槽在运行时都可以插入一个内存设备，上限是 255 个。
+        请注意，由于通过内存`hotplug`添加的内存块的对齐，可能无法实现此元素指定的完整大小分配。如果不需要内存热插拔，无需配置此选项
     * currentMemory
-        `currentMemory`元素定义guest的实际分配的内存大小，`unit`属性与`memory`相同。
-7. 内存备份
+        `currentMemory`元素定义guest的实际分配的内存大小，`unit`属性与`memory`相同。如果省略将于`memory`一样的数值
+        描述:
+        在虚拟机启动后加载了内存balloon驱动后就开始对虚拟机内存进行热插拔，先设置内存为`currentMemory>`大小，这个`currentMemory`qemu进程不知道，是记录在libvirt中的。然后根据需求对内存进行调整（balloon），调整的上限是`memory`，这个`memory`qemu进程是知道的，在虚拟机启动时使用了这个值
+
+7. 内存支持
+
+    > 可选`memoryBacking`元素可能包含几个影响由主机页面支持虚拟内存页面的元素。
+    ```xml
+    <domain>
+        ...
+        <memoryBacking>
+            <hugepages>
+            <page size="1" unit="G" nodeset="0-3,5"/>
+            <page size="2" unit="M" nodeset="4"/>
+            </hugepages>
+            <nosharepages/>
+            <locked/>
+            <source type="file|anonymous|memfd"/>
+            <access mode="shared|private"/>
+            <allocation mode="immediate|ondemand"/>
+            <discard/>
+        </memoryBacking>
+        ...
+    </domain>
+    ```
+    * `hugepages`
+        > 定义guest虚拟机使用`hugepages`(大内存页面)，而不是使用本机使用的内存页面大小；
+        > 在`numa`节点(即宿主机是numa节点)中可以使用`page`可选元素来具体的设置`numa`节点的大页面；`size`元素是必须的，定义使用的大页面的大小，默认单位为`Kib`；可选元素`ubit`定义`size`使用的单位；在`numa`的系统中，可选元素`nodeset`可以`NUMA`节点与某些大页面进行绑定，正确的语法，清参考`NUMA节点调整`
+    * `nosharepages`
+        告诉管理程序，禁止此`domain`不允许使用内存共享即`ksm`内存合并
+    * `locked`
+        当虚拟机管理程序设置和支持时，属于该`domain`的内存页面将被锁定在`host`的内存中，并且不允许`host`将它们交换出来，这可能是某些工作负载（如实时）所必需的。对于`QEMU/KVM guest`虚拟机，QEMU进程本身使用的内存也将被锁定：与`guest`虚拟机内存不同，这是libvirt无法预先确定的数量，因此它必须完全取消锁定内存的限制。因此，启用此选项会产生潜在的安全风险：`host`在内存不足时将无法从`guest`虚拟机回收锁定的内存，这意味着分配大量锁定内存的恶意`guest`虚拟机可能会导致对主机的拒绝服务攻击。因此，除非您的`guest`工作量需要，否则不鼓励使用此选项; 即便如此，强烈建议设置一个 `hard_limit`（参见 内存调整）关于适合特定环境的内存分配，同时减轻上述风险。
+    * `source`
+        使用该type属性，可以提供`file`以利用文件内存备份或保持默认的“匿名”。从4.10.0开始，您可以选择`memfd`支持。（仅限QEMU/KVM）
+    * `access`
+        使用该mode属性，指定内存是`shared`还是`private`。这可以通过每个numa节点覆盖`memAccess`。
+    * `allocation`
+        使用该mode属性，通过提供`immediate`或`ondemand`指定何时分配内存
+    * `discard`
+        当虚拟机管理程序设置和支持时，内存内容将在`guest`虚拟机关闭之前（或拔出DIMM模块时）被丢弃。请注意，这只是一个优化，并不保证在所有情况下都能正常工作（例如，当虚拟机管理程序崩溃时）。
+
 8. 内存调整
+
+   ```xml
+   <domain>
+        ...
+        <memtune>
+            <hard_limit unit='G'>1</hard_limit>
+            <soft_limit unit='M'>128</soft_limit>
+            <swap_hard_limit unit='G'>2</swap_hard_limit>
+            <min_guarantee unit='bytes'>67108864</min_guarantee>
+        </memtune>
+        ...
+    </domain>
+   ```
+
+    * `memtune`
+        可选`memtune`元素提供有关`domain`的内存可调参数的详细信息。如果省略，则默认为OS提供的默认值。对于QEMU/KVM，这些参数作为一个整体应用于QEMU进程。因此，在计算它们时，需要添加 guest RAM、guest video RAM和QEMU本身的一些内存开销，最后一块很难确定，所以需要猜测并尝试。对于每个可调参数，可以使用与之相同的值来指定输入中数字所在的单位`memory`。为了向后兼容，输出始终为KiB。 `unit`所有`* _limit`参数的可能值范围为0到VIR_DOMAIN_MEMORY_PARAM_UNLIMITED
+    * `hard_limit`
+        可选`hard_limit`元素是guest虚拟机可以使用的最大内存。该值的单位是`kibibytes`（即1024字节的块）。强烈建议QEMU和KVM的用户不要设置此限制，因为如果猜测太低，域可能被内核杀死，并且确定进程运行所需的内存是一个 不可判定的问题 ; 这么说，如果你已经设置 locked在 内存的支持，因为您的工作负载需求，你就必须考虑到部署的具体情况，并找出一个值`hard_limit` 它足够大，可以支持guest虚拟机的内存要求，但足够小，可以保护主机免受恶意访客锁定所有内存的侵害。
+    * `soft_limit`
+        可选`soft_limit`元素是在内存争用期间强制执行的内存限制。此值的单位是kibibytes（即1024字节的块）
+    * `swap_hard_limit`
+        可选`swap_hard_limit`元素是guest虚拟机可以使用的最大内存交换。该值的单位是kibibytes（即1024字节的块）。这必须超过`hard_limit`值
+    * `min_guarantee`
+        可选`min_guarantee`元素是guest虚拟机的保证最小内存分配。该值的单位是kibibytes（即1024字节的块）。此元素仅受VMware ESX和OpenVZ驱动程序支持。
+
 9. NUMA节点调整
-10. 阻止I / O调整
+
+    ```xml
+    <domain>
+        ...
+        <numatune>
+            <memory mode="strict" nodeset="1-4,^3"/>
+            <memnode cellid="0" mode="strict" nodeset="1"/>
+            <memnode cellid="2" mode="preferred" nodeset="2"/>
+        </numatune>
+        ...
+    </domain>
+    ```
+    * `numatune`
+        可选`numatune`元素提供了有关如何通过控制域进程的NUMA策略来调整NUMA主机性能的详细信息。NB，仅由QEMU驱动程序支持。
+    * `memory`
+        可选`memory`元素指定如何在NUMA主机上为`domain`进程分配内存。它包含几个可选属性。属性mode是`interleave`，`strict`或`preferred`，默认为`strict`。属性`nodeset`使用与`cpuset`元素的属性相同的语法指定NUMA节点vcpu。属性`placement`可以被用于指示domain进程的内存放置模式，它的值可以是`static`或`auto`，默认为`placement`的vcpu，如果`nodeset`已指定,则值是`static`。`auto`表示domain进程只会从查询numa返回的咨询节点集中分配内存，`nodeset`如果指定了属性值，则会忽略该值 。如果`placement`的vcpu是`auto`，并`numatune`没有指定，默认`numatune`使用placement`auto`和mode`strict`将被隐式添加。
+    * `momnode`
+        可选`memnode`元素可以为每个guest NUMA节点指定内存分配策略。对于那些没有相应memnode元素的节点，memory将使用默认的元素。属性`cellid`为应用了设置的guest虚拟机NUMA节点地址。属性mode并nodeset具有与memory元素相同的含义和语法。此设置与自动放置不兼容。
+
+10. I/O块调整
+
+    ```xml
+    <domain>
+        ...
+        <blkiotune>
+            <weight>800</weight>
+            <device>
+            <path>/dev/sda</path>
+            <weight>1000</weight>
+            </device>
+            <device>
+            <path>/dev/sdb</path>
+            <weight>500</weight>
+            <read_bytes_sec>10000</read_bytes_sec>
+            <write_bytes_sec>10000</write_bytes_sec>
+            <read_iops_sec>20000</read_iops_sec>
+            <write_iops_sec>20000</write_iops_sec>
+            </device>
+        </blkiotune>
+        ...
+    </domain>
+    ```
+
+    * `blkiotune`
+        可选`blkiotune`元素提供了为`domain`调整`Blkio cgroup`可调参数的功能。如果省略，则默认为OS提供的默认值。
+    * `weight`
+        可选`weight`元素是guest虚拟机的总体I/O权重。该值应在[100,1000]范围内。在内核2.6.39之后，该值可以在[10,1000]的范围内。
+    * `device`
+        `domain`可以具有多个`device`元素，其进一步调整`domain`使用的每个主机块设备的权重。请注意，如果多个`guest`虚拟机磁盘由同一主机文件系统中的文件支持，则它们可以共享单个主机块设备，这就是为什么此调整参数位于全局`domain`级而不是与每个`guest`虚拟机磁盘设备关联的原因（与此相对应）`iotune` 可以适用于个人的元素`disk`）。每个`device`元素都有两个必需的子元素，`path`描述了设备的绝对路径，以及`weight`给出该设备的相对权重，范围为[100,1000]。在内核2.6.39之后，该值可以在[10,1000]的范围内。
+      * `read_bytes_sec`
+        读取吞吐量限制，以每秒字节为单位
+      * `write_bytes_sec`
+        写吞吐量限制，以每秒字节数为单位
+      * `read_iops_sec`
+        读取每秒I/O操作限制。
+      * `write_iops_sec`
+        每秒写入I/O操作限制。
+
 11. 资源分区
+
+    ```xml
+    ...
+    <resource>
+    <partition>/virtualmachines/production</partition>
+    </resource>
+    ...
+    ```
+    * 管理程序可以允许将虚拟机放置到资源分区中，可能嵌套所述分区。该`resource`元素将与资源分区相关的配置组合在一起。它当前支持子元素，`partition`其内容定义了放置域的资源分区的绝对路径。如果未列出任何分区，则域将放置在默认分区中。app/admin负责确保在启动guest虚拟机之前存在分区。默认情况下，只能假定存在（特定于虚拟机管理程序）默认分区。
+    * QEMU和LXC驱动程序当前支持资源分区，这些驱动程序将分区路径映射到所有已安装控制器中的cgroups目录。
+
 12. CPU模型和拓扑
+    > 可以这里指定CPU模型，其功能和拓扑的要求。
+    > 参考<https://libvirt.org/formatdomain.html#elementsCPU>
+
 13. 事件配置
-14. 能源管理
+    有时需要覆盖对各种事件采取的默认操作。并非所有虚拟机管理程序都支持所有事件和操作。这些动作可以作为`libvirt`API:`virDomainReboot`， `virDomainShutdown`或 `virDomainShutdownFlags`的结果。使用`virsh reboot`或`virsh shutdown`也会触发事件。
+    ```xml
+    ...
+    <on_poweroff>destroy</on_poweroff>
+    <on_reboot>restart</on_reboot>
+    <on_crash>restart</on_crash>
+    <on_lockfailure>poweroff</on_lockfailure>
+    ...
+    ```
+    * 以下元素集合允许在guest虚拟机操作系统在触发生命周期操作时执行指定的操作。一个常见的用例是在执行初始操作系统安装时强制重启被视为断电。这允许为第一次安装后启动重新配置VM。
+      * `on_poweroff`
+          此元素的内容指定`guest`虚拟机请求断电时要采取的操作。
+
+      * `on_reboot`
+          此元素的内容指定`guest`虚拟机请求重新引导时要执行的操作。
+
+      * `on_crash`
+          此元素的内容指定`guest`虚拟机崩溃时要执行的操作。
+
+      * 以上三个元素有以下属性
+        * `destroy`
+            `domain`将终止并释放所有资源
+        * `restart`
+            `domain`将终止，然后使用相同的配置重新启动
+        * `preserve`
+            `domain`将被终止并保留资源以允许分析
+        * `rename-restart`
+            `domain`将终止，然后使用新名称重新启动
+      * QEMU/KVM支持`on_poweroff`和`on_reboot`事件处理`destroy`和`restart`动作。`on_reboot`事件的`preserve`操作被视为`destroy`，`on_poweroff`事件的`rename-restart`操作被视为`restart`。
+
+      * `on_crash`事件额外支持以下操作
+        * `coredump-destroy`
+            `domain`崩溃后，`core`将被转储，然后`domain`将被完全终止并释放所有资源
+        * `coredump-restart`
+            `domain`崩溃后，`core`将被转储，然后将使用相同的配置重新启动`domain`
+
+    * `on_lockfailure`配置锁管理器失去资源锁应该采取什么行动。libvirt可识别以下操作，但并非所有操作都需要由各个锁管理器支持。如果未指定任何操作，则每个锁定管理器将采用其默认操作。
+      * poweroff
+        域名将被强制关闭。
+      * restart
+        域将关闭并再次启动以重新获取其锁定。
+      * pause
+        域将被暂停，以便在解决锁定问题时手动恢复。
+      * ignore
+        保持域运行，好像什么也没发生。
+
+14. 电源管理
+    > 可以强制启用或禁用对客户OS的BIOS通告。（注意：只有qemu驱动程序支持）
+    ```xml
+    ...
+    <pm>
+    <suspend-to-disk enabled='no'/>
+    <suspend-to-mem enabled='yes'/>
+    </pm>
+    ...
+    ```
+    * `pm`
+        `S3(suspend-to-mem)`和`S4(suspend-to-disk)`这些元素启用`yes`或禁用`no`对BIOS的ACPI睡眠状态支持。如果未指定任何内容，则管理程序将保留其默认值。
+        注意：此设置无法阻止客户操作系统执行挂起，因为客户操作系统本身可以选择避免睡眠状态的不可用（例如，通过完全关闭S4）。
+
 15. 管理程序功能
+    > 管理程序可以允许打开/关闭某些 `CPU/machine` 功能。
+
+    ```xml
+    ...
+    <features>
+        <pae/>
+        <acpi/>
+        <apic/>
+        <hap/>
+        <privnet/>
+        <hyperv>
+            <relaxed state='on'/>
+            <vapic state='on'/>
+            <spinlocks state='on' retries='4096'/>
+            <vpindex state='on'/>
+            <runtime state='on'/>
+            <synic state='on'/>
+            <reset state='on'/>
+            <vendor_id state='on' value='KVM Hv'/>
+            <frequencies state='on'/>
+            <reenlightenment state='on'/>
+            <tlbflush state='on'/>
+            <ipi state='on'/>
+            <evmcs state='on'/>
+        </hyperv>
+        <kvm>
+            <hidden state='on'/>
+        </kvm>
+        <pvspinlock state='on'/>
+        <gic version='2'/>
+        <ioapic driver='qemu'/>
+        <hpt resizing='required'>
+            <maxpagesize unit='MiB'>16</maxpagesize>
+        </hpt>
+        <vmcoreinfo state='on'/>
+        <smm state='on'>
+            <tseg unit='MiB'>48</tseg>
+        </smm>
+        <htm state='on'/>
+    </features>
+    ...
+    ```
+    `features`元素中列出了所有要素，省略了可切换的要素标记将其关闭。可以通过[`capabilities XML`](https://libvirt.org/formatcaps.html)和[domain capabilities XML](https://libvirt.org/formatdomaincaps.html)来找到可用的功能，但完全虚拟化域的通用集合是：
+    * `pae`
+        物理地址扩展模式允许32位客户机处理超过4GB的内存。
+    * `acpi`
+        ACPI对于电源管理非常有用，例如，对于正常关闭，`KVM guest`需要它才能正常工作。
+    * `apic`
+        APIC允许使用可编程IRQ管理. 有一个可选的属性`eoi`与值`on`和`off`切换EOI的用于客户的可用性（中断结束）
+    * `hap`
+        根据不同的`state`属性(值on， off)启用或禁用使用硬件辅助寻址。默认情况下，如果管理程序检测到硬件辅助分页的可用性的花值为`on`。
+    * `viridian`
+        为半虚拟化来宾操作系统启用Viridian管理程序扩展
+    * `privnet`
+        始终创建专用网络命名空间。如果定义了任何接口设备，则会自动设置。此功能仅与基于容器的虚拟化驱动程序（如LXC）相关。
+    * `hyperv`
+        启用各种功能可改善运行Microsoft Windows的guest虚拟机的行为。
+        | 特征            | 描述                                         | 值                                |
+        | --------------- | -------------------------------------------- | --------------------------------- |
+        | relaxed         | 放松对计时器的限制                           | on,off                            |
+        | vapic           | 启用虚拟APIC                                 | no,off                            |
+        | spinlocks       | 启用spinlocks支持                            | no,off                            |
+        | runtime         | 处理访客代码和代表访客代码所花费的处理器时间     | no,off                            |
+        | synic           | 启用合成中断控制器（SyNIC）                  | no,off                            |
+        | stimer          | 启用S​​yNIC计时器                            | no,off                            |
+        | reset           | 启用管理程序重置                             | no,off                            |
+        | vendor_id       | 设置管理程序供应商ID                         | no,off;value-字符串，最多12个字符 |
+        | frequencies     | 暴露频率MSR                                  | no,off                            |
+        | reenlightenment | 启用迁移的重新启动通知                       | no,off                            |
+        | tlbflush        | 启用PV TLB刷新支持                           | no,off                            |
+        | ipi             | 启用PV IPI支持                               | no,off                            |
+        | evmcs           | 启用Enlightened VMCS                         | no,off                            |
+    * `pvspinlock`
+        通过暴露`pvticketlocks`机制通知`guest`虚拟机主机支持`paravirtual spinlocks`。可以使用`state='off'` 属性显式禁用此功能。
+    * `kvm`
+        用于更改KVM管理程序行为的各种功能。
+        * `hidden`
+            隐藏基于标准MSR发现的KVM管理程序
+    * `pmu`
+        根据`state`属性(值`on`，`off`，default `on`)启用或禁用guest虚拟机的性能监视单元。
+    * `vmport`
+        根据状态属性（值为`on`、`off`、default `on`）启用或禁用对`vmware IO端口`、`vmmouse`等的模拟。
+    * `gic`
+        启用使用通用中断控制器而不是APIC的体系结构，以便处理中断。例如，`aarch64`体系结构使用`gic`而不是`apic`。可选属性`version`指定了`gic`版本；但是，并非所有管理程序都支持它。接受值为`2`、`3`和`主机`。
+    * `smm`
+        
+    * `ioapic`
+    * `hpt`
+    * `vmcoreinfo`
+    * `htm`
+    * `nested-hv`
 16. 保持时间
 17. 绩效监测事件
 18. 设备
@@ -239,110 +550,101 @@
 20. 安全标签
 21. 钥匙包裹
 22. 启动安全性
+
 23. 我的xml配置
     ```xml
-    <domain type='kvm'>                     <!-- 如果是Xen，则type=‘xen’，还有qemu、lxc、kqemu等参数 -->
-        <name>node1</name>                  <!-- 虚拟机名称，同一物理机唯一 -->
-        <uuid>fd3535db-2558-43e9-b067-314f48211343</uuid>   <!-- 同一物理机唯一，可用uuidgen生成，如果不指定，启动的是后自动生成 -->
-        <title>This is my first test kvm</title>            <!-- title参数提供一个对虚拟机简短的说明，它不能包含换行符。 -->
-        <description>我是个描述</description>                 <!-- 描述，libvirt不会使用这个参数 -->
-        <memory unit='KiB'>524288</memory>                  <!-- 最大内存，unit(内存单位，默认KiB)：K、KiB、M、MiB、G、GiB、T、TiB-->
-        <currentMemory>524288</currentMemory>               <!-- 实际分给给客户端的内存她小于memory的定义，默认和memory一样 -->
-        <vcpu placement='static' cpuset="1-4,^3,6" current="1">2</vcpu> <!-- 虚拟机可使用的cpu个数，可选参数有：
-                                                                                placement(分配模式):static|auto；
-                                                                                cpuset(使用那个物理CPU):逗号分割，^代表排除这个CPU；
-                                                                                current：最少CPU个数。 -->
-        <!-- 系统启动相关 -->
+    <domain type='kvm'>
+        <name>node1</name>
+        <uuid>fd3535db-2558-43e9-b067-314f48211343</uuid>
+        <title>This is my first test kvm</title>
+        <description>我是个描述</description>
+        <memory unit='KiB'>524288</memory>
+        <currentMemory>524288</currentMemory>
+        <vcpu placement='static' cpuset="1-4,^3,6" current="1">2</vcpu>
         <os>
-            <type arch='x86_64' machine='pc-i440fx-vivid'>hvm</type>    <!-- arch指出系统架构类型，machine(机器类型)，查看机器类型：qemu-system-x86_64 -M ? -->
-            <loader>/usr/bin/qemu-kvm</loader>                          <!-- 全虚拟化的守护进程所在的位置 -->
-            <boot dev='hd'/>                <!-- 启动介质，第一次需要装系统可以选择cdrom光盘启动，dev参数：fd、hd、cdrom、network -->
-            <bootmenu enable='yes'/>        <!-- 表示启动按F12进入启动菜单 -->
+            <type arch='x86_64' machine='pc-i440fx-vivid'>hvm</type>
+            <loader>/usr/bin/qemu-kvm</loader>
+            <boot dev='hd'/>
+            <bootmenu enable='yes'/>
         </os>
-        <!-- Hypervisor的特性 -->
+
         <features>
-            <acpi/>                         <!-- Advanced Configuration and Power Interface,高级配置与电源接口 -->
-            <apic/>                         <!-- Advanced Programmable Interrupt Controller,高级可编程中断控制器 -->
-            <pae/>                          <!-- Physical Address Extension,物理地址扩展 -->
+            <acpi/>
+            <apic/>
+            <pae/>
+            <viridian/>
         </features>
-        <!-- 虚拟机时钟设置，offset(时间格式)：
-                UTC：同步到UTC时钟
-                localtime：同步到主机时钟所在的时区
-                timezone：The guest clock will be synchronized to the requested timezone using the timezone attribute. -->
+
         <clock offset='localtime'/>
-        <!-- 控制周期，参数分别是：
-                destory:domain终止并释放占用的资源；
-                restart:domain终止并以相同配置启动；
-                preserver:domain终止但不释放资源；
-                rename-restart：domain终止并以一个新的名字重新启动 -->
-        <on_poweroff>destroy</on_poweroff>  <!-- 当客户端请求poweroff时执行特定的动作 -->
-        <on_reboot>restart</on_reboot>      <!-- 当客户端请求reboot时执行特定的动作 -->
-        <on_crash>restart</on_crash>        <!-- 当客户端崩溃时执行的动作 -->
-        <!-- 设备配置，所有的设备都是一个名为devices元素的子设备 -->
+        <on_poweroff>destroy</on_poweroff>
+        <on_reboot>restart</on_reboot>
+        <on_crash>restart</on_crash>
+        <on_lockfailure>restart</on_lockfailure>
+
         <devices>
-            <emulator>/usr/bin/qemu-kvm</emulator>                           <!-- 指定模拟设备二进制文件的全路径 -->
-            <!-- disk、floppy(软盘)、cdrom或者一个 paravirtualized driver(半虚拟驱动程序)，
-                他们通过一个disk元素指定 -->
+            <emulator>/usr/bin/qemu-kvm</emulator>
+
             <disk type='file' device='disk'>
-                <driver name='qemu' type='qcow2'/>
-                <source file='/home/data/kvm/node1.0.qcow2'/>           <!-- source -->
+                <driver name='qemu' type='qcow2' cache='none' io='threads'/>
+                <source file='/home/data/kvm/node1.0.qcow2'/>
                 <target dev='vda' bus='virtio'/>
-                <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/> <!-- 域、总线、槽、功能号，slot值同一虚拟机上唯一 -->
             </disk>
-            <!-- 定义串口 -->
+
             <serial type='pty'>
                 <target port='0'/>
             </serial>
-            <!-- console用来代表交互性的控制台 -->
+
             <console type='pty'>
                 <target port='0'/>
             </console>
-            <!-- 利用Linux网桥连接网络 -->
+
             <interface type='bridge'>
                 <mac address='fa:92:01:33:d4:fa'/>
-                <source bridge='virbr0'/>       <!-- 配置的网桥网卡名称 -->
-                <target dev='vnet0'/>           <!-- 同一网桥下相同 -->
-                <alias name='net0'/>            <!-- 别名，同一网桥下相同 -->
-                <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>     <!-- 注意slot值唯一 -->
+                <source bridge='virbr0'/>
+                <target dev='vnet0'/>
+                <alias name='net0'/>
             </interface>
-            <!-- 利用ovs网桥连接网络 -->
-            <interface type='bridge'>  
-                <source bridge='br-ovs0'/>  
+
+            <interface type='bridge'>
+                <source bridge='br-ovs0'/>
                 <virtualport type='openvswitch'/>
                 <target dev='tap0'/>
-                <model type='virtio'/>  
+                <model type='virtio'/>
             </interface>
-            <!-- 配置成pci直通虚拟机连接网络，SR-IOV网卡的VF场景 -->
+
             <hostdev mode='subsystem' type='pci' managed='yes'>
                 <source>
                     <address domain='0x0000' bus='0x03' slot='0x00' function='0x0'/>
                 </source>
             </hostdev>
-            <!-- 利用vhostuser连接ovs端口 -->
+
             <interface type='vhostuser'>
                 <mac address='fa:92:01:33:d4:fa'/>
-                <source type='unix' path='/var/run/vhost-user/tap0' mode='client'/>  
+                <source type='unix' path='/var/run/vhost-user/tap0' mode='client'/>
                 <model type='virtio'/>
                 <driver vringbuf='2048'/>
-                <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>  
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
             </interface>
-            <interface type='network'>              <!-- 基于虚拟局域网的网络 -->
-                <mac address='52:54:4a:e1:1c:84'/>  <!-- 可用命令生成，见下面的补充 -->
-                <source network='default'/>         <!-- 默认 -->
-                <target dev='vnet1'/>               <!-- 同一虚拟局域网的值相同 -->
+
+            <interface type='network'>
+                <mac address='52:54:4a:e1:1c:84'/>
+                <source network='default'/>
+                <target dev='vnet1'/>
                 <alias name='net1'/>
-                <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>     <!-- 注意slot值 -->
+                <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
             </interface>
-            <graphics type='vnc' port='5900' autoport='yes' listen='0.0.0.0' keymap='en-us'/>   <!-- 配置vnc，windows下可以使用vncviewer登录，获取vnc端口号：virsh vncdisplay vm0 -->
+
+            <graphics type='vnc' port='5900' autoport='yes' listen='0.0.0.0' keymap='en-us'/>
                 <listen type='address' address='0.0.0.0'/>
             </graphics>
+
         </devices>
     </domain>
     ```
 
 ## 管理工具
 
-> 这里直接写命令的创建方式和介绍，涉及到的参数的意义，可从[优化和介绍kvm里](#优化和介绍KVM)详细查看
+> 这里直接写命令的常用方式，涉及到的参数的意义，可从[优化和介绍kvm里](#优化和介绍KVM)详细查看
 > 默认的KVM虚拟机工作目录为`/var/lib/libvirt`，配置文件目录`/etc/libvirt/qemu`,主机名称+xml结尾的文件即其相关虚拟机的配置文件，需要修改其配置，也可以直接修改xml文件实现（不建议）。其中autostart目录定义的配置文件会随主机一起启动，而network定义了虚拟机使用桥接网络时的网关网卡的相关配置。
 
 ### qemu-img
@@ -482,6 +784,8 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
 
 ### virt-viewer
 
+> 远程连接工具，支持`vnc`和`spice`
+
 ### guestfish
 
 > guestfish 是一个命令行工具，用来检验和修改客机的文件系统。此工具使用 libguestfs，并显示所有 guestfs API 所提供的功能。这个工具包括在同名的软件包中，称为 guestfish。
@@ -491,6 +795,7 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
 
 > Boxes 是一个简单的图形桌面虚拟化工具，用来查看和访问虚拟机和远程系统。Boxes 提供了一种方法，即以最小的配置来测试桌面上的不同操作系统和应用。虚拟系统可以手动也可使用快速安装功能，快速安装功能可以通过优化设置来自动预配置虚拟机。这个工具包括在同名的软件包中，被称作 gnome-boxes。
 > 需要gnome桌面环境
+> 不推荐使用，反正我没有，没有怎么研究
 
 * 安装
 
@@ -504,7 +809,73 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
 
 请查看redhat官方介绍[其他工具](https://access.redhat.com/documentation/zh-cn/red_hat_enterprise_linux/7/html/virtualization_getting_started_guide/sect-virtualization_getting_started-tools-other)
 
-## 优化和介绍KVM
+## 磁盘&存储配置
+
+1. 存储池和储存卷
+
+    > “存储池 ”（storage pool）即一个由 “libvirt” 管理的文件、目录或储存设备，其目的是为虚拟机提供储存空间。存储池被分隔为存储 “卷 ”（volume），可以用来存储虚拟机镜像或附加到虚拟机作为额外额存储。多个客机可共享同一储存池，允许储存资源得到更好分配
+    >
+    >储存池进一步划分为“储存卷 ”（storage volume）。储存卷是物理分区、LVM 逻辑卷、基于文件的磁盘镜像及其它由 libvirt 控制的储存形式的抽象层。不论基于何种硬件，储存卷会作为本地储存设备呈现给虚拟机。
+    >
+    > 个人理解为，存储池就是从本地硬盘或网络硬盘划分出来一个区域给虚拟机 guest 系统使用的存储空间，每个卷相对guest系统来说就是一块硬盘
+
+    * 本地存储池
+
+        > 本地储存池直接连接到主机服务器。它们包括本地目录、直接连接的磁盘、物理分区和本地设备上的 LVM 卷组，因为本地存储池不支持实时迁移，所以它可能不适用于某些生产环境。
+
+    * 网络存储池
+
+        > 网络储存池包括在网络上使用标准协议共享的储存设备。使用 virt-manager 在主机间进行虚拟机的迁移需要网络储存，但是当使用 virsh 迁移时，它是可选的。网络储存池由 libvirt 进行管理。
+
+2. 主机存储
+
+    > 磁盘镜像可以储存在一系列和主机相连的本地或远程存储中。(可以存储在本地或者网络磁盘中)
+    > KVM虚拟机的磁盘镜像从存储方式来看分为两种：存储于文件系统，直接使用使用裸设备。
+
+    * 镜像文件(存储在文件系统中)
+        > 镜像文件储存在主机文件系统中。它可以储存在本地文件系统中，如 ext4 或 xfs；或网络文件系统中，如 NFS
+        > 创建一个镜像文件给 guest 系统当作磁盘使用
+
+        例如 libguestfs 这样的工具，能管理、备份及监控文件。
+
+        KVM 上的磁盘镜像格式包括：
+        * raw
+
+            > 当对磁盘 I/O 性能要求非常高，而且通常不需要通过网络传输镜像文件时，可以使用 raw 文件。**不推荐使用**
+
+            raw 镜像文件指不包含附加元数据的磁盘内容。
+
+            假如主机文件系统允许，raw 文件可以是预分配（pre-allocated）或稀疏（sparse）。稀疏文件根据需求分配主机磁盘空间（动态存储)，因此它是一种精简配置形式（thin provisioning）。预分配文件的所有空间需要被预先分配，但它比稀疏文件性能好。
+
+        * qcow2
+
+            > Red Hat Enterprise Linux 7.0 及更新版本支持 qcow2 v3 镜像文件格式。
+            > 动态存储，用多少就实际占用多少物理存储空间
+
+            qcow2 镜像文件提供许多高级磁盘镜像特征，如快照、压缩及加密。它们可以用来代表通过模板镜像创建的虚拟机。因为只有虚拟机写入的扇区部分才会分配在镜像中，所以 qcow2 文件的网络传输效率较高。
+
+    * lvm卷(直接使用裸设备)
+
+        > LVM 精简配置为 LVM 卷提供快照和高效的空间使用，它可以作为 qcow2 的一种替代选择。
+        > 创建一个lvm卷给 guest 系统当作硬盘使用
+
+        逻辑卷可用于磁盘镜像，并使用系统的 LVM 工具进行管理。 由于它使用更简单的块储存模式，LVM 比文件系统的性能更高。
+
+    * 主机设备(直接使用裸设备)
+
+        > 在 SAN 而不是主机上进行储存管理时，可以使用主机设备
+
+        主机设备如物理 CD-ROM、原始磁盘或 LUN 都可以提供给客机。这使得 SAN 或 iSCSI LUN 还有本地 CD-ROM 都可以提供给客机所用。
+
+    * 分布式存储系统(直接使用裸设备)
+
+        > Gluster 卷可用作磁盘镜像。它提供了高效的、使用网络的集群存储。
+
+        Red Hat Enterprise Linux 7 包括在 GlusterFS 上对磁盘镜像的原生支援。这使 KVM 主机可以直接从 GlusterFS 卷引导虚拟机镜像，并使用 GlusterFS 卷中的镜像作为虚拟机的数据磁盘。与 GlusterFS FUSE 相比，KVM 原生支持性能更好。
+
+## KVM网络互联配置
+
+## 优化KVM
 
 ### CPU优化
 
@@ -515,6 +886,8 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
 * 为了使虚拟机可以在具有不同 CPU 功能集的主机间安全地进行迁移，qemu-kvm 在默认状态下不会把主机 CPU 的所有功能都提供给客机操作系统，而是根据所选的 CPU 型号来为虚拟机提供相关的 CPU 功能。如果虚拟机启用了某个 CPU 功能，则此虚拟机无法迁移到不支持向客机提供此功能的主机上。
 
 ### 内存优化
+
+> 主要分为主机优化和guest优化
 
 1. KSM（kernel Samepage Merging）相同页合并
 
@@ -659,8 +1032,13 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
         vm.nr_hugepages=25000
         sysctl -p                               # 重新加载配置
         ```
-    * kvm虚拟机需要手动开启大页内存的
-     根据不同的管理工具开启方法不同，具体请百度下
+
+4. 内存气泡
+
+5. 页面交换
+    qemu-kvm虚拟机作为系统的进程存在，所使用的内存可以利用系统的swap能力进行换出。不需要特别设置。
+6. 页面压缩
+    未见支持。
 
 ### I/O等设备使用半虚拟化设备
 
@@ -711,79 +1089,18 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
         > USB 设备分配允许客机拥有在执行特定任务时有专有访问 USB 设备的权利。这就象 USB 设备物理地连接到虚拟机上一样。
 
     * SR-IOV
+        > 简单的说，SR-IOV是一种虚拟化方案，用来使一个PCIe的物理设备，能虚拟出多个设备，这些虚拟出来的设备看起来就像是多个真实的物理设备一样，并获得能够与本机性能媲美的 I/O 性能。
+        >
+        > SR-IOV现在最多是用在网卡上，kvm虚拟机的网卡功能一般会下降到实体机的30-50%，如果改用SR-IOV会大大提高网卡性能。
 
-        > 支持 SR-IOV 的 PCI-e 设备提供一个单一根功能（如单一以太网接口），并把多个各自分离的虚拟设备作为独特 PCI 设备功能。每个虚拟化设备都可能有自身独特的 PCI 配置空间、内存映射的寄存器以及单独的基于 MSI 的中断系统。
-
-        SR-IOV （Single Root I/O Virtualization）是一个 PCI 快捷标准，把单一物理 PCI 功能扩展到同分散的虚拟化功能（VF）一样共享 PCI 资源。通过 PCI 设备分配，每个功能可以被不同虚拟机使用。
+      * SR-IOV 有2种功能：
+        * 物理功能 (Physical Function, PF):
+          就是标准的PCIe的功能了
+        * 虚拟功能 (Virtual Function, VF):
+          与物理功能关联的一种功能。VF 是一种轻量级 PCIe 功能，可以与物理功能以及与同一物理功能关联的其他 VF 共享一个或多个物理资源。VF 仅允许拥有用于其自身行为的配置资源。
 
     * NPIV
 
         > NPIV 可以提供带有企业级存储解决方案的高密度虚拟环境。
 
         N_Port ID Virtualization（NPIV）是对光纤通道设备有效的功能。NPIV 共享单一物理 N_Port 作为多个 N_Port ID。NPIV 为 HBA（光纤通道主机总线适配器，Fibre Channel Host Bus Adapter）提供和 SR-IOV 为 PCIe 接口提供的功能相似的功能。有了 NPIV，可以为 SAN（存储区域网络，Storage Area Network）提供带有虚拟光纤通道发起程序的虚拟机。
-
-### 磁盘&存储
-
-1. 存储池和储存卷
-
-    > “存储池 ”（storage pool）即一个由 “libvirt” 管理的文件、目录或储存设备，其目的是为虚拟机提供储存空间。存储池被分隔为存储 “卷 ”（volume），可以用来存储虚拟机镜像或附加到虚拟机作为额外额存储。多个客机可共享同一储存池，允许储存资源得到更好分配
-    >
-    >储存池进一步划分为“储存卷 ”（storage volume）。储存卷是物理分区、LVM 逻辑卷、基于文件的磁盘镜像及其它由 libvirt 控制的储存形式的抽象层。不论基于何种硬件，储存卷会作为本地储存设备呈现给虚拟机。
-    >
-    > 个人理解为，存储池就是从本地硬盘或网络硬盘划分出来一个区域给虚拟机 guest 系统使用的存储空间，每个卷相对guest系统来说就是一块硬盘
-
-    * 本地存储池
-
-        > 本地储存池直接连接到主机服务器。它们包括本地目录、直接连接的磁盘、物理分区和本地设备上的 LVM 卷组，因为本地存储池不支持实时迁移，所以它可能不适用于某些生产环境。
-
-    * 网络存储池
-
-        > 网络储存池包括在网络上使用标准协议共享的储存设备。使用 virt-manager 在主机间进行虚拟机的迁移需要网络储存，但是当使用 virsh 迁移时，它是可选的。网络储存池由 libvirt 进行管理。
-
-2. 主机存储
-
-    > 磁盘镜像可以储存在一系列和主机相连的本地或远程存储中。(可以存储在本地或者网络磁盘中)
-    > KVM虚拟机的磁盘镜像从存储方式来看分为两种：存储于文件系统，直接使用使用裸设备。
-
-    * 镜像文件(存储在文件系统中)
-        > 镜像文件储存在主机文件系统中。它可以储存在本地文件系统中，如 ext4 或 xfs；或网络文件系统中，如 NFS
-        > 创建一个镜像文件给 guest 系统当作磁盘使用
-
-        例如 libguestfs 这样的工具，能管理、备份及监控文件。
-
-        KVM 上的磁盘镜像格式包括：
-        * raw
-
-            > 当对磁盘 I/O 性能要求非常高，而且通常不需要通过网络传输镜像文件时，可以使用 raw 文件。**不推荐使用**
-
-            raw 镜像文件指不包含附加元数据的磁盘内容。
-
-            假如主机文件系统允许，raw 文件可以是预分配（pre-allocated）或稀疏（sparse）。稀疏文件根据需求分配主机磁盘空间（动态存储)，因此它是一种精简配置形式（thin provisioning）。预分配文件的所有空间需要被预先分配，但它比稀疏文件性能好。
-
-        * qcow2
-
-            > Red Hat Enterprise Linux 7.0 及更新版本支持 qcow2 v3 镜像文件格式。
-            > 动态存储，用多少就实际占用多少物理存储空间
-
-            qcow2 镜像文件提供许多高级磁盘镜像特征，如快照、压缩及加密。它们可以用来代表通过模板镜像创建的虚拟机。因为只有虚拟机写入的扇区部分才会分配在镜像中，所以 qcow2 文件的网络传输效率较高。
-
-    * lvm卷(直接使用裸设备)
-
-        > LVM 精简配置为 LVM 卷提供快照和高效的空间使用，它可以作为 qcow2 的一种替代选择。
-        > 创建一个lvm卷给 guest 系统当作硬盘使用
-
-        逻辑卷可用于磁盘镜像，并使用系统的 LVM 工具进行管理。 由于它使用更简单的块储存模式，LVM 比文件系统的性能更高。
-
-    * 主机设备(直接使用裸设备)
-
-        > 在 SAN 而不是主机上进行储存管理时，可以使用主机设备
-
-        主机设备如物理 CD-ROM、原始磁盘或 LUN 都可以提供给客机。这使得 SAN 或 iSCSI LUN 还有本地 CD-ROM 都可以提供给客机所用。
-
-    * 分布式存储系统(直接使用裸设备)
-
-        > Gluster 卷可用作磁盘镜像。它提供了高效的、使用网络的集群存储。
-
-        Red Hat Enterprise Linux 7 包括在 GlusterFS 上对磁盘镜像的原生支援。这使 KVM 主机可以直接从 GlusterFS 卷引导虚拟机镜像，并使用 GlusterFS 卷中的镜像作为虚拟机的数据磁盘。与 GlusterFS FUSE 相比，KVM 原生支持性能更好。
-
-### KVM网络

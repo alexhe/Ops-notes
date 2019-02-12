@@ -2,10 +2,10 @@
 
 1. [kubernetes所需端口](#kubernetes所需端口)
 2. [在线安装](#在线安装)
-    1. [配置yum源](#配置yum源)
-    2. [安装](#安装)
+   1. [配置yum源](#配置yum源)
+   2. [安装](#安装)
 3. [二进制安装（推荐）](#二进制安装推荐)
-    1. [下载二进制文件](#下载二进制文件)
+   1. [下载二进制文件](#下载二进制文件)
 
 ## kubernetes所需端口
 
@@ -34,6 +34,7 @@
 ### 配置yum源
 
 * centos的yum源
+
     ```shell
     cat <<EOF > /etc/yum.repos.d/kubernetes.repo
     [kubernetes]
@@ -45,7 +46,9 @@
     gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
     EOF
     ```
+
 * ubuntu的apt源
+
     ```shell
     apt-get update && apt-get install -y apt-transport-https
     curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add - 
@@ -57,13 +60,16 @@
 ### 安装
 
 * centos
+
     ```shell
     setenforce 0
     sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config ## 设置selinux为透明模式
     yum install -y kubelet kubeadm kubectl
     systemctl enable kubelet && systemctl start kubelet ## 启动kubelet
     ```
+
 * ubuntu
+
     ```shell
     apt-get update
     apt-get install -y kubelet kubeadm kubectl

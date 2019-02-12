@@ -1,20 +1,20 @@
 ﻿# openpn学习笔记<!-- omit in toc -->
 
 1. [编译安装openvpn](#编译安装openvpn)
-    1. [编译安装](#编译安装)
-    2. [添加环境变量和服务](#添加环境变量和服务)
+   1. [编译安装](#编译安装)
+   2. [添加环境变量和服务](#添加环境变量和服务)
 2. [生成服务端和客户端证书](#生成服务端和客户端证书)
-    1. [下载和配置easyrsa](#下载和配置easyrsa)
-    2. [根ca证书](#根ca证书)
-    3. [服务端证书](#服务端证书)
-    4. [客户端证书](#客户端证书)
-    5. [查看和撤销一个证书](#查看和撤销一个证书)
+   1. [下载和配置easyrsa](#下载和配置easyrsa)
+   2. [根ca证书](#根ca证书)
+   3. [服务端证书](#服务端证书)
+   4. [客户端证书](#客户端证书)
+   5. [查看和撤销一个证书](#查看和撤销一个证书)
 3. [配置openvpn](#配置openvpn)
-    1. [服务端配置](#服务端配置)
-    2. [客户端配置](#客户端配置)
+   1. [服务端配置](#服务端配置)
+   2. [客户端配置](#客户端配置)
 4. [开启简单密码认证](#开启简单密码认证)
-    1. [创建认证脚本](#创建认证脚本)
-    2. [修改配置文件](#修改配置文件)
+   1. [创建认证脚本](#创建认证脚本)
+   2. [修改配置文件](#修改配置文件)
 
 >此文档为做实验的实验笔记，在阿里云买了个低配服务器，通过openvpn在家里电脑上安装mysql和freeradius，并通过freeradius控制openvpn账号
 
@@ -24,7 +24,7 @@
 
 * 安装编译依赖库
     ```sh
-    yum -y install gcc gcc-c++ make autoconf openssl-devel lzo-devel pam-devel
+    yum -y install gcc gcc-c++ make autoconf openssl-devel lzo-devel pam-devel systemd-devel systemd-libs
     ```
 
 * 下载并配置编译环境
@@ -90,6 +90,7 @@
     cd /opt/openvpn  # 进入openvpn的安装目录目录
     cp ./lib/systemd/system/openvpn-server@.service /usr/lib/systemd/system/openvpn@server.service  # 拷贝服务文件到系统服务目录
     mkdir -p /etc/openvpn/server/ # 创建配置文件目录
+    cd /usr/local/src/openvpn-2.4.6/ # 进入源文件目录
     cp sample/sample-config-files/server.conf /etc/openvpn/server/server.conf # 拷贝配置文件
     ```
 
