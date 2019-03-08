@@ -58,3 +58,26 @@
     ```
 
 * 添加到系统服务
+
+  * 使用`pm2 start` （启动服务)
+  * 执行`pm2 save` (保存当前已经启动了的服务)
+  * 执行`pm2 startup` (设置开机自启的配置)
+  * 执行`pm2 startup`以后会得到以下提示 设置环境变量
+
+    ```sh
+    [PM2] Init System found: upstart
+    [PM2] To setup the Startup Script, copy/paste the following command:
+    sudo env PATH=$PATH:/opt/nodejs/bin /opt/nodejs/lib/node_modules/pm2/bin/pm2 startup systemd -u cc --hp /home/cc
+    ```
+
+  * 创建系统服务
+
+    ```sh
+    sudo env PATH=$PATH:/opt/nodejs/bin /opt/nodejs/lib/node_modules/pm2/bin/pm2 startup systemd -u cc --hp /home/cc
+    ```
+
+  * 启动服务
+
+    ```sh
+    systemctl enable pm2-cc
+    ```

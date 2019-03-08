@@ -29,6 +29,7 @@
     wget https://github.com/shadowsocks/shadowsocks-libev/releases/download/v3.2.3/shadowsocks-libev-3.2.3.tar.gz
     tar -xvf shadowsocks-libev-3.2.3.tar.gz
     cd shadowsocks-libev-3.2.3
+    mkdir /opt/shadowsocks-libev
     ```
 
   * 编译安装
@@ -192,6 +193,30 @@
     ```
 
 * 安装`shadowsocks-manager`
+
+  * 拓扑
+
+    ```sh
+    +-------------+    +-------------+       +------+
+    | Shadowsocks |    | Shadowsocks |  ...  |      |
+    | manager API |    | manager API |       |      |
+    +-------------+    +-------------+       +------+
+          |                 |                  |
+          |                 |                  |
+    +-------------+    +-------------+       +------+
+    | ssmgr       |    | ssmgr       |  ...  |      |
+    | with type s |    | with type s |       |      |
+    +-------------+    +-------------+       +------+
+          |                 |                  |
+          +------------+----+--------  ...  ---+
+                        |
+                        |
+                +---------------+
+                | ssmgr plugins |
+                |  with type m  |
+                +---------------+
+    ```
+
   * 从源代码安装
 
     ```sh
@@ -202,10 +227,15 @@
 
   * 从NPM安装
 
+    > 升级前请做好备份,请勿跨版本升级，例如`0.21.0`可以升级到`0.22.x`，但不能直接升级到`0.23.x`
+    > 通过NPM安装的可执行文件(ssmgr):`/opt/nodejs/bin`,程序文件:`ib/node_modules/shadowsocks-manager/`
+
     ```sh
     npm i -g shadowsocks-manager
     or
     npm i -g shadowsocks-manager --unsafe-perm
+    # 升级 a.b.c为版本号
+    npm i -g shadowsocks-manager@a.b.c
     ```
 
 * 配置`shadowsocks-manager`

@@ -3,10 +3,11 @@
 1. [rpm命令](#rpm命令)
 2. [vim命令](#vim命令)
 3. [yum命令](#yum命令)
-    1. [el7更改yum源与更新系统](#el7更改yum源与更新系统)
+   1. [el7更改yum源与更新系统](#el7更改yum源与更新系统)
 4. [systemctl服务管理](#systemctl服务管理)
 5. [文件操作命令](#文件操作命令)
-6. [问题](#问题)
+6. [子网掩玛计算](#子网掩玛计算)
+7. [问题](#问题)
 
 ## rpm命令
 
@@ -37,6 +38,7 @@ rpm -q filename.rpm | 查询指定软件是否安装
     **按下Esc键进入命令模式**
 
 * 常用命令：
+
     ```vim
     /搜索内容                       # 搜索文件中的关键字(按’n ‘键 下一个)
     :set ic                        # 忽略大小写
@@ -52,7 +54,9 @@ rpm -q filename.rpm | 查询指定软件是否安装
     :set  nu                       # 设行
     :set  nonu                     # 取消行
     ```
+
 * 常用编辑命令：
+
     ```vim
     gg                    # 跳到第一行
     G                     # 跳到最后一行
@@ -75,13 +79,17 @@ rpm -q filename.rpm | 查询指定软件是否安装
     u                     # 取消上一步操作
     ab  a_____    b_____  # 替换命令  输入a+空格/回车 就变为b
     ```
+
 * 导入命令( 光标所在处 )：
+
     ```vim
     :r                   # 文件名(命令/路径)
     :!which              # 查看命令所在位置
     :!date               # 看时间，ps. :r !date  可以导入时间
     ```
+
 * 连续行注释：
+
     ```vim
     :n1,n2s /^/#/g       # 连续注释#号
     :n1,n2s /^#//g       # 取消连续#号
@@ -89,6 +97,7 @@ rpm -q filename.rpm | 查询指定软件是否安装
     ```
 
 * map定义：
+
     ```sh
     :map (ctrl+v) + 快捷键
     # 组合命令比如： :map  [ctrl+v]P,定义之后，命令模式下输入P，行前就会多个#号，ctrl+v组合键在vi编辑器里会生成一个类似 ^ 的符号
@@ -100,10 +109,12 @@ rpm -q filename.rpm | 查询指定软件是否安装
 ## yum命令
 
 * yum下载文件保存目录
+
     ```sh
     /var/cache/yum/*/packages
     # 通常安装后删除，但亦可通过配置保留。配置yum.conf  keepcache选项 keepcache=1
     ```
+
 * 常用的一些命令
     命令 | 作用
     ---|---
@@ -124,18 +135,22 @@ rpm -q filename.rpm | 查询指定软件是否安装
     yum groupinfo 软件包组 | 查询指定的软件包组的信息
 * 用yum只下载rpm包
     > 用yumdownloader就能下载rpm包了。简单快捷啊。
+
     ```sh
     yum -y install yum-utils
     yumdownloader filename.rpm
     ```
+
 * 下载rpm包强制安装
     > 有时用yum自动安装会不成功时，就可以下载该rpm包后，再强制安装
+
     ```sh
     rpm -ivh ***.rpm --force --nodeps
     ```
 
 * 源代码包的安装
     > .src.rpm结尾的文件由软件源代码文件组成，要安装此种 rpm包，需要用下面的命令。
+
     ```sh
     rpm　--recompile 文件名称
     # 编译源代码，然后安装它
@@ -146,24 +161,33 @@ rpm -q filename.rpm | 查询指定软件是否安装
 ### el7更改yum源与更新系统
 
 1. 首先备份yum源
+
     ```sh
     cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
     ```
+
 2. 进入yum源配置文件所在文件夹
+
     ```sh
     cd /etc/yum.repos.d/
     ```
+
 3. 下载163的yum源配置文件，放入/etc/yum.repos.d/(操作前请做好相应备份)
+
     ```sh
     wget http://mirrors.163.com/.help/*        # 首先去163查看最新的源是哪个
     or
     curl -o http://mirrors.163.com/.help/*
     ```
+
 4. 运行yum makecache生成缓存
+
     ```sh
     yum makecache
     ```
+
 5. 更新系统(选择update,时间比较久,主要看个人网速)
+
     ```sh
     yum -y update
     # 升级所有包，改变软件设置和系统设置,系统版本内核都升级
@@ -194,9 +218,9 @@ chkconfig --list | systemctl list-unit-files fo.service | 查看各个级别下�
     > mkdir（选项）（参数）
 
     选项：
-    > -Z：设置安全上下文，当使用SELinux时有效；</br>
-    > -m<目标属性>或--mode<目标属性>建立目录的同时设置目录的权限；</br>
-    > -p或--parents 若所要建立目录的上层目录目前尚未建立，则会一并建立上层目录；</br>
+    > -Z：设置安全上下文，当使用SELinux时有效；
+    > -m<目标属性>或--mode<目标属性>建立目录的同时设置目录的权限；
+    > -p或--parents 若所要建立目录的上层目录目前尚未建立，则会一并建立上层目录；
     > --version 显示版本信息。
 
     参数：
@@ -204,12 +228,26 @@ chkconfig --list | systemctl list-unit-files fo.service | 查看各个级别下�
 
     示例：
     > 在目录/usr/meng下建立子目录test，并且只有文件主有读、写和执行权限，其他人无权访问
+
     ```sh
     mkdir -m 700 /usr/meng/test
     ```
+
     > 在当前目录中建立bin和bin下的os_1目录，权限设置为文件主可读、写、执行，同组用户可读和执行，其他用户无权访问
+
     ```sh
     mkdir -p -m 750 bin/os_1
+    ```
+
+## 子网掩玛计算
+
+* ipcalc
+
+    ```sh
+    ipcalc -bhnmpgi 192.168.0.1/32
+    ipcalc -bhnmpgi 192.168.0.1 255.255.255.240
+    # 帮助文档
+    ipcalc --help
     ```
 
 ## 问题
@@ -217,8 +255,11 @@ chkconfig --list | systemctl list-unit-files fo.service | 查看各个级别下�
 * 不能自动补全
     情况：CentOS 7 Mini版的系统，需要使用Firewall-cmd的功能，但是在tab件补全时，发现tab不能显示命令。
     解决方法：
-    1. 安装bash-completion.一般bash自带这个自动补齐的功能，但是只能自动补全命令名和文件名。而         为了大道更好的补全效果，我们需要安装bash-completion包。
+    1. 安装bash-completion.一般bash自带这个自动补齐的功能，但是只能自动补全命令名和文件名。为了更好的补全效果，我们需要安装bash-completion包。
+
         ```sh
-        [root@xijia01 html]# yum -y install bash-completion
+        yum -y install epel-release
+        yum -y install bash-completion
         ```
+
     2. 此时需要退出终端，再次连接，然后就可以使用tab键自动补全了

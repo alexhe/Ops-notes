@@ -33,17 +33,20 @@
 ## 编译安装qemu和libvirt（未完成）
 
 * 下载文件
+
     ```sh
     # 可以去官网下载最新的
     wget https://download.qemu.org/qemu-3.0.0.tar.xz
     ````
-  
+
 * 安装需要用到的库文件
+
     ```sh
     yum install git glib2-devel libfdt-devel pixman-devel zlib-devel bzip2-devel libaio-devel spice-server-devel spice-protocol libusb-devel usbredir-devel
     ```
-  
+
 * 编译安装
+
     ```sh
     ./configure \
     --prefix=/opt/qemu-kvm \
@@ -75,6 +78,7 @@
     ```sh
     yum install centos-release-qemu-ev
     ```
+
 * 安装qemu和libvirt
 
     ```sh
@@ -110,6 +114,7 @@
         ......
     <domain>
     ```
+
     * 根元素`domain`有两个属性，`type`代表虚拟机的管理程序，有`kvm`，`xen`,`qemu`,`lxc`和`kqemu`；`id`代表正在运行的虚拟机唯一整数标识符，非活动的虚拟机没有id
     * `name`
         虚拟机的名称，同一个物理机器唯一
@@ -130,6 +135,7 @@
 
     1. bios启动
         > 通过BIOS引导可用于支持完全虚拟化的虚拟机管理程序。在这种情况下，BIOS具有引导顺序优先级（软盘，硬盘，cdrom，网络），用于确定获取/查找引导映像的位置。
+
         ```xml
         ...........
         <os>
@@ -234,6 +240,7 @@
         ...
     </domain>
     ```
+
     * memory
         `memory`元素定义了，guest虚拟机启动的时候最大内存，包括启动指定的内存和稍后添加的内存(后期通过`virsh`添加内存将自动把这里的的数值调大)，`unit`属性指定内存容量的单位，默认`KiB`,
         可选单位有：
@@ -255,6 +262,7 @@
 7. 内存支持
 
     > 可选`memoryBacking`元素可能包含几个影响由主机页面支持虚拟内存页面的元素。
+
     ```xml
     <domain>
         ...
@@ -273,6 +281,7 @@
         ...
     </domain>
     ```
+
     * `hugepages`
         > 定义guest虚拟机使用`hugepages`(大内存页面)，而不是使用本机使用的内存页面大小；
         > 在`numa`节点(即宿主机是numa节点)中可以使用`page`可选元素来具体的设置`numa`节点的大页面；`size`元素是必须的，定义使用的大页面的大小，默认单位为`Kib`；可选元素`ubit`定义`size`使用的单位；在`numa`的系统中，可选元素`nodeset`可以`NUMA`节点与某些大页面进行绑定，正确的语法，清参考`NUMA节点调整`
@@ -328,6 +337,7 @@
         ...
     </domain>
     ```
+
     * `numatune`
         可选`numatune`元素提供了有关如何通过控制域进程的NUMA策略来调整NUMA主机性能的详细信息。NB，仅由QEMU驱动程序支持。
     * `memory`
@@ -383,6 +393,7 @@
     </resource>
     ...
     ```
+
     * 管理程序可以允许将虚拟机放置到资源分区中，可能嵌套所述分区。该`resource`元素将与资源分区相关的配置组合在一起。它当前支持子元素，`partition`其内容定义了放置域的资源分区的绝对路径。如果未列出任何分区，则域将放置在默认分区中。app/admin负责确保在启动guest虚拟机之前存在分区。默认情况下，只能假定存在（特定于虚拟机管理程序）默认分区。
     * QEMU和LXC驱动程序当前支持资源分区，这些驱动程序将分区路径映射到所有已安装控制器中的cgroups目录。
 
@@ -392,6 +403,7 @@
 
 13. 事件配置
     有时需要覆盖对各种事件采取的默认操作。并非所有虚拟机管理程序都支持所有事件和操作。这些动作可以作为`libvirt`API:`virDomainReboot`， `virDomainShutdown`或 `virDomainShutdownFlags`的结果。使用`virsh reboot`或`virsh shutdown`也会触发事件。
+
     ```xml
     ...
     <on_poweroff>destroy</on_poweroff>
@@ -400,6 +412,7 @@
     <on_lockfailure>poweroff</on_lockfailure>
     ...
     ```
+
     * 以下元素集合允许在guest虚拟机操作系统在触发生命周期操作时执行指定的操作。一个常见的用例是在执行初始操作系统安装时强制重启被视为断电。这允许为第一次安装后启动重新配置VM。
       * `on_poweroff`
           此元素的内容指定`guest`虚拟机请求断电时要采取的操作。
@@ -439,6 +452,7 @@
 
 14. 电源管理
     > 可以强制启用或禁用对客户OS的BIOS通告。（注意：只有qemu驱动程序支持）
+
     ```xml
     ...
     <pm>
@@ -447,6 +461,7 @@
     </pm>
     ...
     ```
+
     * `pm`
         `S3(suspend-to-mem)`和`S4(suspend-to-disk)`这些元素启用`yes`或禁用`no`对BIOS的ACPI睡眠状态支持。如果未指定任何内容，则管理程序将保留其默认值。
         注意：此设置无法阻止客户操作系统执行挂起，因为客户操作系统本身可以选择避免睡眠状态的不可用（例如，通过完全关闭S4）。
@@ -494,6 +509,7 @@
     </features>
     ...
     ```
+
     `features`元素中列出了所有要素，省略了可切换的要素标记将其关闭。可以通过[`capabilities XML`](https://libvirt.org/formatcaps.html)和[domain capabilities XML](https://libvirt.org/formatdomaincaps.html)来找到可用的功能，但完全虚拟化域的通用集合是：
     * `pae`
         物理地址扩展模式允许32位客户机处理超过4GB的内存。
@@ -537,7 +553,7 @@
     * `gic`
         启用使用通用中断控制器而不是APIC的体系结构，以便处理中断。例如，`aarch64`体系结构使用`gic`而不是`apic`。可选属性`version`指定了`gic`版本；但是，并非所有管理程序都支持它。接受值为`2`、`3`和`主机`。
     * `smm`
-        
+        根据`state`属性（值`on`， `off`默认值`on`）启用或禁用系统管理模式。
     * `ioapic`
     * `hpt`
     * `vmcoreinfo`
@@ -552,19 +568,23 @@
 22. 启动安全性
 
 23. 我的xml配置
+
     ```xml
     <domain type='kvm'>
         <name>node1</name>
-        <uuid>fd3535db-2558-43e9-b067-314f48211343</uuid>
         <title>This is my first test kvm</title>
         <description>我是个描述</description>
-        <memory unit='KiB'>524288</memory>
-        <currentMemory>524288</currentMemory>
-        <vcpu placement='static' cpuset="1-4,^3,6" current="1">2</vcpu>
+        <memory unit='MB'>2048</memory>
+        <currentMemory unit='MB'>1024</currentMemory>
+        <vcpu placement='static' cpuset="1,2" current="1">2</vcpu>
+        <cpu>
+            <topology sockets='1'  cores='1' threads='2'/>
+        </cpu>
+        <cpu mode='host-model'>
+            <model fallback='allow'/>
+        </cpu>
         <os>
-            <type arch='x86_64' machine='pc-i440fx-vivid'>hvm</type>
-            <loader>/usr/bin/qemu-kvm</loader>
-            <boot dev='hd'/>
+            <type arch='x86_64'>hvm</type>
             <bootmenu enable='yes'/>
         </os>
 
@@ -572,6 +592,22 @@
             <acpi/>
             <apic/>
             <pae/>
+            <!-- `hyperv`选项优化windows的，linux可以不用 -->
+            <hyperv>
+                <relaxed state='on'/>
+                <vapic state='on'/>
+                <spinlocks state='on' retries='4096'/>
+                <vpindex state='on'/>
+                <runtime state='on'/>
+                <synic state='on'/>
+                <reset state='on'/>
+                <vendor_id state='on' value='KVM Hv'/>
+                <frequencies state='on'/>
+                <reenlightenment state='on'/>
+                <tlbflush state='on'/>
+                <ipi state='on'/>
+                <evmcs state='on'/>
+            </hyperv>
             <viridian/>
         </features>
 
@@ -582,12 +618,29 @@
         <on_lockfailure>restart</on_lockfailure>
 
         <devices>
-            <emulator>/usr/bin/qemu-kvm</emulator>
+            <emulator>/usr/libexec/qemu-kvm</emulator>
 
+            <!-- 使用磁盘文件 -->
             <disk type='file' device='disk'>
-                <driver name='qemu' type='qcow2' cache='none' io='threads'/>
+                <driver name='qemu' type='qcow2' cache='writeback' io='threads'/>
                 <source file='/home/data/kvm/node1.0.qcow2'/>
+                <boot order='1'/>
                 <target dev='vda' bus='virtio'/>
+            </disk>
+
+            <!-- 使用存储池中的卷 -->
+            <disk type='volume' device='disk'>
+                <driver name='qemu' type='qcow2' cache='writeback' io='threads'/>
+                <source pool='kvm-host' volume='node1'/>
+                <target dev='vdb' bus='virtio'/>
+            </disk>
+
+            <!-- 加载光盘镜像 -->
+            <disk type='file' device='cdrom'>
+                <source file='/home/cc/hypervisor/images/ubuntu-18.04.2-live-server-amd64.iso'/>
+                <target dev='hdc'/>
+                <boot order='2'/>
+                <readonly/>
             </disk>
 
             <serial type='pty'>
@@ -598,45 +651,29 @@
                 <target port='0'/>
             </console>
 
-            <interface type='bridge'>
-                <mac address='fa:92:01:33:d4:fa'/>
-                <source bridge='virbr0'/>
-                <target dev='vnet0'/>
-                <alias name='net0'/>
-            </interface>
-
-            <interface type='bridge'>
-                <source bridge='br-ovs0'/>
-                <virtualport type='openvswitch'/>
-                <target dev='tap0'/>
-                <model type='virtio'/>
-            </interface>
-
             <hostdev mode='subsystem' type='pci' managed='yes'>
-                <source>
-                    <address domain='0x0000' bus='0x03' slot='0x00' function='0x0'/>
-                </source>
             </hostdev>
 
-            <interface type='vhostuser'>
-                <mac address='fa:92:01:33:d4:fa'/>
-                <source type='unix' path='/var/run/vhost-user/tap0' mode='client'/>
+            <interface type='bridge'>
+                <source bridge='birbr0'/>
                 <model type='virtio'/>
-                <driver vringbuf='2048'/>
-                <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
+                <driver name='vhost' queue='4'>
             </interface>
 
-            <interface type='network'>
-                <mac address='52:54:4a:e1:1c:84'/>
-                <source network='default'/>
-                <target dev='vnet1'/>
-                <alias name='net1'/>
-                <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
-            </interface>
-
-            <graphics type='vnc' port='5900' autoport='yes' listen='0.0.0.0' keymap='en-us'/>
+            <graphics type='vnc' port='5900' autoport='yes' listen='0.0.0.0' keymap='en-us'>
                 <listen type='address' address='0.0.0.0'/>
             </graphics>
+
+            <input type='tablet'  bus='usb'/>
+
+            <graphics  type='spice' port='4000' autoport='no' listen='0.0.0.0'>
+                <listen  type='address' address='0.0.0.0'/>
+                <agent_mouse  mode='off'/>
+            </graphics>
+
+            <rng model='virtio'>
+                <backend model='random'>/dev/random</backend>
+            </rng>
 
         </devices>
     </domain>
@@ -714,6 +751,7 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
     ```
 
 * 虚拟机备份
+
     ```sh
     virsh save --bypass-cache node1 /var/lib/libvirt/save/node1_1.save --running    # 备份
     virsh restore /var/lib/libvirt/save/node1_1.save --bypass-cache --running       # 还原
@@ -908,8 +946,9 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
       * 如果CPU是整个宿主机的资源瓶颈则不建议使用KSM，因为KSM会带来相应的CPU开销
   
     * KSM文件目录：
+
         ```bash
-        ls /sys/kernel/mm/ksm/
+        $ ls /sys/kernel/mm/ksm/
         总用量 0
         -r--r--r--. 1 root root 4096 11月 30 17:05 full_scans           # 对可合并的内存区域扫描过的次数
         -rw-r--r--. 1 root root 4096 11月 30 17:05 max_page_sharing
@@ -926,7 +965,7 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
         -r--r--r--. 1 root root 4096 11月 30 17:05 stable_node_dups
         -rw-r--磁盘r--. 1 root root 4096 11月 30 17:05 use_zero_pages
         ```
-  
+
     * KSM管理
      ksm可以直接配置/sys/kernel/mm/ksm/目录下的文件
   
@@ -934,11 +973,13 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
         > ksmtuned会一直保持循环执行，以调节ksm服务运行。
 
         * 安装ksmtuned管理工具
+
             ```sh
             yum install ksmtuned
             ```
 
         * 编辑ksmtuned配置文件
+
             ```ini
             # ksm每次内存扫描的时间;
             KSM_MONITOR_INTERVAL = 60
@@ -982,6 +1023,7 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
     > 不同的管理工具不同的配置方法，以virs为例
 
     * 查看当前虚拟机的内存限制，单位为KB
+
     ```sh
     virsh memtune c7-1
 
@@ -989,7 +1031,9 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
     soft_limit     : 无限制       # 可用最大内存
     swap_hard_limit: 无限制       # 强制最大swap使用大小
     ```
+
     * 设置强制最大内存为100MB，在线生效。
+
     ```sh
     virsh memtune c7-1 --hard-limit 1024000 --live
 
@@ -1009,6 +1053,7 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
     > 如只配置了一个大小的大页面，可以通过 /proc/meminfo 中的 Hugepagesize 和 HugePages_Total 计算出大页面所在内存空间的大小。这部分空间会被算到已用的内存空间里，即使还未真正被使用
   
     * 查看内存信息，无可用大页
+
         ```sh
         cat /proc/meminfo | grep Huge
         HugePages_Total:       0        # 大叶面的数量
@@ -1017,13 +1062,15 @@ qemu-img convert -f raw -o qcow2 node1.img node1.qcow2     # 更改镜像格式
         HugePages_Surp:        0
         Hugepagesize:       2048 kB     # 每个大页面的大小
         ```
-  
+
     * 查看设置的大页面的数目
+
         ```bash
         cat /proc/sys/vm/nr_hugepages
         ```
-  
+
     * 指定大页需要的内存页面数量,页面大小一般不更改，
+
         ```bash
         echo 25000 > /proc/sys/vm/nr_hugepages  # 临时生效
         sysctl -w vm.nr_hugepages=25000         # 永久生效
