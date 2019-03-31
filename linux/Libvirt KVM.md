@@ -576,7 +576,7 @@
         <description>我是个描述</description>
         <memory unit='MB'>2048</memory>
         <currentMemory unit='MB'>1024</currentMemory>
-        <vcpu placement='static' cpuset="1,2" current="1">2</vcpu>
+        <vcpu placement='static' cpuset="0" current="1">2</vcpu>
         <cpu>
             <topology sockets='1'  cores='1' threads='2'/>
         </cpu>
@@ -660,17 +660,20 @@
                 <driver name='vhost' queue='4'>
             </interface>
 
+            <input type='mouse' bus='virtio'/>
+            <input type='keyboard' bus='virtio'/>
+            <input type='tablet' bus='virtio'/>
+
             <graphics type='vnc' port='5900' autoport='yes' listen='0.0.0.0' keymap='en-us'>
                 <listen type='address' address='0.0.0.0'/>
             </graphics>
-
-            <input type='tablet'  bus='usb'/>
 
             <graphics  type='spice' port='4000' autoport='no' listen='0.0.0.0'>
                 <listen  type='address' address='0.0.0.0'/>
                 <agent_mouse  mode='off'/>
             </graphics>
 
+            <!-- 随机数优化 -->
             <rng model='virtio'>
                 <backend model='random'>/dev/random</backend>
             </rng>
