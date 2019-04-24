@@ -15,7 +15,7 @@ def send_config(file):
         crt.Screen.WaitForStrings([">","#"])
         index = crt.Screen.MatchIndex
         if index:
-            time.sleep(0.1)
+            #time.sleep(0.1)
             crt.Screen.Send(read_line.strip('\r\n') + chr(13))
 
 

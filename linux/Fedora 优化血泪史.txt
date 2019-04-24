@@ -36,3 +36,23 @@ noto ans cjk sc medium
 #搜狗词库
 目录：/usr/share/ibus-libpinyin/db/
 脚本目录：~.config/ibus/libpinyin/user.lua
+
+
+# 关闭wifi的节能模式
+
+sudo vim /etc/NetworkManager/conf.d/wifi-powersave.conf
+添加内容如下： 
+[connection]
+wifi.powersave=2
+
+
+# 命令行回收站
+
+sudo dnf install install trash-cli
+echo 'alias rm='trash-put' >> ~/.bashrc
+
+列出回收站内容：trash-list
+清空回收站：trash-empty
+删除到回收站: trash-put
+恢复回收站的内容: trash-restore
+删除垃圾桶中的内容: restore-rm *.txt

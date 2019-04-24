@@ -1,11 +1,18 @@
 # gns3 安装使用
 
+## gns3 vpcs and dy 安装
+
+```sh
+dnf copr enable athmane/gns3-extra
+dnf install vpcs dynamips
+```
+
 ## gns3 IOU for linux 安装
 
 * `fedora 29`
 
     ```sh
-    sudo dnf install git bison flex gcc make openssl-libs:i686 libgcc:i686
+    sudo dnf install git bison flex gcc make openssl-libs.i686 libgcc.i686
     git clone http://github.com/ndevilla/iniparser.git
     cd iniparser
     make
